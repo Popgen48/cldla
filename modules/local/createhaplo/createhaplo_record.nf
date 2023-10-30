@@ -1,0 +1,26 @@
+process CREATEHAPLO_RECORD{
+
+    tag { "create haplo_record_${chrom}" }
+    label "oneCpu"
+    //conda "${baseDir}/environment.yml"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py39hcada746_0':
+        'biocontainers/pysam:v0.15.2ds-2-deb-py3_cv1' }"
+    publishDir("${params.outdir}/createhaplo/record/${chrom}/", mode:"copy")
+
+    input:
+        tuple val(chrom), path(vcf)
+
+    output:
+        path ("*window_counts*"), emit: record
+        
+    
+    script:
+        def window_size = params.window_size
+
+        """
+        
+        python3 ${baseDir}/bin/get_vcf_record_count.py ${vcf} ${chrom} ${window_size}
+
+        """ 
+}

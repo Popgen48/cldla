@@ -11,8 +11,8 @@ WorkflowCldla.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+//def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
+//for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
@@ -37,7 +37,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
+include { CHECK_INPUT } from '../subworkflows/local/check_input'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,10 +48,11 @@ include { INPUT_CHECK } from '../subworkflows/local/input_check'
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FASTQC                      } from '../modules/nf-core/fastqc/main'
-include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
-include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
-
+include { BCFTOOLS_VIEW } from '../modules/nf-core/bcftools/view/main'
+include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
+include { CREATEHAPLO_RECORD } from '../modules/local/createhaplo/createhaplo_record'
+include { CREATE_HAPMAP } from '../modules/local/createhaplo/create_hapmap'
+include { CREATE_INVERSE } from '../modules/local/grmprocess/create_inverse'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -68,45 +69,47 @@ workflow CLDLA {
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
-    INPUT_CHECK (
+    CHECK_INPUT (
         ch_input
     )
-    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    //
-    // MODULE: Run FastQC
-    //
-    FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    chrom = chrom_vcf_idx.map{chrom, vcf, idx -> chrom}
 
-    CUSTOM_DUMPSOFTWAREVERSIONS (
-        ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    BCFTOOLS_VIEW(
+        CHECK_INPUT.out.chrom_vcf_idx,
+        [],
+        [],
+        []
     )
 
-    //
-    // MODULE: MultiQC
-    //
-    workflow_summary    = WorkflowCldla.paramsSummaryMultiqc(workflow, summary_params)
-    ch_workflow_summary = Channel.value(workflow_summary)
+    meta_groupedvcf = BCFTOOLS_VIEW.out.vcf.groupTuple()
 
-    methods_description    = WorkflowCldla.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description)
-    ch_methods_description = Channel.value(methods_description)
-
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
-
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList()
+    BCFTOOLS_CONCAT(
+        meta_groupedvcf.map{meta, vcf -> tuple(meta, vcf, [])}
     )
-    multiqc_report = MULTIQC.out.report.toList()
+
+    mergedvcf_chrom = BCFTOOLS_CONCAT.out.vcf.combine(chrom)
+
+    chrom_mergedvcf = mergedvcf_chrom.map{vcf, chrom -> tuple(vcf,chrom)}
+
+    CREATEHAPLO_RECORD(
+        BCFTOOLS_VIEW.out.vcf
+    )
+    chrom_window = CREATEHAPLO_RECORD.out.record.splitText().map{a->tuple(a.split()[0], a.split()[1])}
+
+    chrom_window_vcf = chrom_window.combine(BCFTOOLS_VIEW.out.vcf, by: 0)
+
+    CREATE_HAPMAP(
+        chrom_window_vcf
+    )
+    //CREATE_HAPMAP.out.record.view()
+    chrom_hap_map_par = CREATE_HAPMAP.out.record.map{chrom,hmp->tuple(chrom,hmp[0],hmp[1],hmp[2])}
+    //chrom_hap_map_par.view()
+    CREATE_INVERSE(
+        chrom_hap_map_par
+    )
+    
+    
 }
 
 /*

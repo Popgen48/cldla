@@ -56,6 +56,7 @@ include { UAR_INVERSE } from '../modules/local/uarprocess/uar_inverse'
 include { CREATEHAPLO_RECORD } from '../modules/local/createhaplo/createhaplo_record'
 include { CREATE_HAPMAP } from '../modules/local/createhaplo/create_hapmap'
 include { CREATE_INVERSE } from '../modules/local/grmprocess/create_inverse'
+include { RUN_ECHIDNA } from '../modules/local/echidna/run_echidna'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -89,7 +90,7 @@ workflow CLDLA {
     outprefix = Channel.value(params.output_prefix)
     output_vcf = outprefix.combine(vcf)
     t_output_vcf = output_vcf.groupTuple()
-    t_output_vcf.view()
+    //t_output_vcf.view()
 
     BCFTOOLS_CONCAT(
         t_output_vcf.map{prefix,vcf->tuple(prefix,vcf,[])}
@@ -139,11 +140,12 @@ workflow CLDLA {
     )
 
     chrwin_hap = CREATE_HAPMAP.out.chrom_hap.map{chrom,hap->tuple(hap.getBaseName().minus('.Hap'), hap)}
-    chrwin_hap_ginv = chrwin_hap.combine(CREATE_INVERSE.out.chrwin_ginv, by:0)
-    chrwin_hap_ginv.view()
-    //chrom_windowinv_chrominv = UAR_INVERSE.out.chrom_ginv.combine(CREATE_INVERSE.out.chrom_ginv, by:0)
-    //chrom_windowinv_chrominv_hap = chrom_windowinv_chrominv.combine(CREATE_HAPMAP.out.chrom_hap, by:0)
-    //chrom_windowinv_chrominv_hap.view()
+    chrwin_hap_winginv = chrwin_hap.combine(CREATE_INVERSE.out.chrwin_ginv, by:0)
+    chr_hap_winginv = chrwin_hap_winginv.map{chrwin, hap, ginv->tuple(chrwin.split("\\.")[-2], hap,ginv)}
+    chr_hap_winginv_chromginv = chr_hap_winginv.combine(UAR_INVERSE.out.chrom_ginv,by:0)
+    RUN_ECHIDNA(
+        chr_hap_winginv_chromginv
+    )
     
     
 }

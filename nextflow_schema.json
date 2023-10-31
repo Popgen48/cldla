@@ -10,10 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input",
-                "outdir"
-            ],
+            "required": ["input", "outdir", "echidna_params", "pheno_file"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -56,12 +53,20 @@
                 "window_size": {
                     "type": "number",
                     "description": "Window size to carry out cLDLA analysis",
-                    "default": 40
+                    "default": 40.0
                 },
                 "output_prefix": {
                     "type": "string",
                     "default": "cldla_run1",
                     "description": "output prefix should not contain the dot in it"
+                },
+                "echidna_params": {
+                    "type": "string",
+                    "description": "path to the parameter file containing statistical model"
+                },
+                "pheno_file": {
+                    "type": "string",
+                    "description": "path to the phenotypes file as recognized by echidna"
                 }
             }
         },
@@ -173,14 +178,7 @@
                     "description": "Method used to save pipeline results to output directory.",
                     "help_text": "The Nextflow `publishDir` option specifies which intermediate files should be saved to the output directory. This option tells the pipeline what method should be used to move these files. See [Nextflow docs](https://www.nextflow.io/docs/latest/process.html#publishdir) for details.",
                     "fa_icon": "fas fa-copy",
-                    "enum": [
-                        "symlink",
-                        "rellink",
-                        "link",
-                        "copy",
-                        "copyNoFollow",
-                        "move"
-                    ],
+                    "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"],
                     "hidden": true
                 },
                 "email_on_fail": {

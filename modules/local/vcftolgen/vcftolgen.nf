@@ -12,7 +12,7 @@ process VCFTOLGEN{
         tuple val(chrom), path(vcf)
 
     output:
-        tuple val("${chrom}"), path ("*.lgen"), emit: lgen
+        tuple val("${chrom}"), path ("*.lgen"), emit: chrom_lgen
         
     
     script:

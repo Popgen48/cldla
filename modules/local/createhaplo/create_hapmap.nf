@@ -12,7 +12,10 @@ process CREATE_HAPMAP{
         tuple val(chrom), val(window), path(vcf)
 
     output:
-        tuple val("${chrom}"), path ("*.{Hap,Map,par}"), emit: record
+        tuple val("${chrom}"), path ("*.Hap"), emit: chrom_hap
+        tuple val("${chrom}"), path ("*.Map"), emit: chrom_map
+        tuple val("${chrom}"), path ("*.par"), emit: chrom_par
+        
         
     
     script:

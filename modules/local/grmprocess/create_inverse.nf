@@ -10,15 +10,17 @@ process CREATE_INVERSE{
     //    'biocontainers/pysam:v0.15.2ds-2-deb-py3_cv1' }"
 
     input:
-        tuple val(chrom), path(hap), path(map), path(par)
+        tuple val(chrom), path(hap)
+        tuple val(chrom), path(map)
+        tuple val(chrom), path(par)
 
     output:
-        tuple val(chrom), path ("*.giv"), emit: record
+        tuple val(o_prefix), path ("*.giv"), emit: chrwin_ginv
         
     
     script:
 
-        def o_prefix = hap.getBaseName().minus('.Hap')
+        o_prefix = hap.getBaseName().minus('.Hap')
         //chrom = prefix.split(".")[0]
 
 

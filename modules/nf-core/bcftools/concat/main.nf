@@ -1,5 +1,5 @@
 process BCFTOOLS_CONCAT {
-    tag "$meta.id"
+    tag "$meta"
     label 'process_medium'
 
     conda 'modules/nf-core/bcftools/concat/environment.yml'

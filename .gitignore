@@ -6,3 +6,5 @@ results/
 testing/
 testing*
 *.pyc
+/bin/Echidna
+/bin/plotconv

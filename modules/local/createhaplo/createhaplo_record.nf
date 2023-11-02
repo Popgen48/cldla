@@ -13,14 +13,16 @@ process CREATEHAPLO_RECORD{
 
     output:
         path ("*window_counts*"), emit: record
+        path ("*random_windows*"), emit: random_record
         
     
     script:
         def window_size = params.window_size
+        def n_random_window = params.n_random_window
 
         """
         
-        python3 ${baseDir}/bin/get_vcf_record_count.py ${vcf} ${chrom} ${window_size}
+        python3 ${baseDir}/bin/get_vcf_record_count.py ${vcf} ${chrom} ${window_size} ${n_random_window}
 
         """ 
 }

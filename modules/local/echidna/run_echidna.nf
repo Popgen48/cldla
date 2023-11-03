@@ -10,7 +10,7 @@ process RUN_ECHIDNA{
     publishDir("${params.outdir}/echidna/${chrom}", mode:"copy")
 
     input:
-        tuple val(chrom), path(hap), path(win_ginv), path(chrom_ginv), path(pheno_file)
+        tuple val(chrom), path(hap), path(map_f), path(win_ginv), path(chrom_ginv), path(pheno_file)
 
     output:
         tuple val("${chrom}"), path ("*.{as,esr}"), emit: chrom_as
@@ -19,18 +19,37 @@ process RUN_ECHIDNA{
     script:
         
         echidna_params = params.echidna_params
-        win_ginv_base = win_ginv.getName()
+        win_ginv_base = hap==[] ? chrom+"_00.00": win_ginv.getName()
         chrom_ginv_base = chrom_ginv.getName()
-        new_prefix = hap.getName().minus('.Hap')
+        new_prefix = hap==[] ? chrom+"_00":hap.getName().minus('.Hap')
+
+        if( hap != [] ){
         
         """
         diplo=\$(awk 'END{print \$4}' ${hap})
 
         awk 'NR==FNR{sample[\$1]=\$4;next}{\$(NF+1)=sample[\$1];print}' ${hap} ${pheno_file} > ${new_prefix}.phe
         
-        python ${baseDir}/bin/prepare_echidna_params.py ${echidna_params} \${diplo} ${chrom_ginv_base} ${win_ginv_base} ${new_prefix}.phe
+        python ${baseDir}/bin/prepare_echidna_params.py ${echidna_params} \${diplo} ${chrom_ginv_base} ${win_ginv_base} ${new_prefix}.phe h1
 
         ${baseDir}/bin/Echidna -w2ro ${new_prefix}.as
 
+        cp ./${new_prefix}/*.esr .
+
+
         """ 
+        }
+        else{
+
+        """
+
+        python ${baseDir}/bin/prepare_echidna_params.py ${echidna_params} 00 ${chrom_ginv_base} ${win_ginv_base} ${pheno_file} h0
+
+        ${baseDir}/bin/Echidna -w2ro ${new_prefix}.as
+        
+        cp ./${new_prefix}/*.esr .
+
+        """
+            
+        }
 }

@@ -87,6 +87,10 @@
                 "p_value": {
                     "type": "number",
                     "description": "p-value cutoff based on permutation test"
+                },
+                "include_chrom": {
+                    "type": "string",
+                    "description": "file containing ids of chromosome on which cLDLA will be carried out"
                 }
             }
         },

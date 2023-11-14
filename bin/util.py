@@ -30,27 +30,27 @@ def read_vcf(vcf_path, window_size, window_number):
         # calculate maf only collect the genotypes if the maf is grt than 0
         maf = get_maf(record)
         
-        if maf[0] != 0 and maf[1] != 0:
+        #if maf[0] != 0 and maf[1] != 0:
             # Iterate through samples
-            for sample in record.samples:
-                sample_values = record.samples[sample]['GT']
-                if sample not in sample_genotypes:
-                    sample_genotypes[sample] = []
+        for sample in record.samples:
+            sample_values = record.samples[sample]['GT']
+            if sample not in sample_genotypes:
+                sample_genotypes[sample] = []
 
-                sample_genotypes[sample].append(sample_values)
-                
-            if not record.id:
-                record.id = f'{record.chrom}_{record.pos}'
-                
-            # While maf is collected here, it is not used in downstream analysis
-            mafs[record.id] = min(maf) / sum(maf)
+            sample_genotypes[sample].append(sample_values)
             
-            homozygosity = get_homozygosity(maf)
-            hzgys[record.id] = homozygosity
+        if not record.id:
+            record.id = f'{record.chrom}_{record.pos}'
             
-            positions[record.id] = record.pos / 1e6
-        else:
-            i -= 1
+        # While maf is collected here, it is not used in downstream analysis
+        mafs[record.id] = min(maf) / sum(maf)
+        
+        homozygosity = get_homozygosity(maf)
+        hzgys[record.id] = homozygosity
+        
+        positions[record.id] = record.pos / 1e6
+        #else:
+        #    i -= 1
 
     vcf.close()
 

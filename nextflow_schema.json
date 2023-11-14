@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "outdir", "echidna_params", "pheno_file"],
+            "required": ["input", "outdir", "pheno_file"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -91,6 +91,19 @@
                 "include_chrom": {
                     "type": "string",
                     "description": "file containing ids of chromosome on which cLDLA will be carried out"
+                },
+                "wombat_params": {
+                    "type": "string",
+                    "description": "parameter template for wombat"
+                },
+                "run_wombat": {
+                    "type": "boolean",
+                    "description": "whether to run wombat"
+                },
+                "run_window_serial": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "whether to run wombat serially on each window"
                 }
             }
         },

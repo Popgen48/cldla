@@ -2,7 +2,7 @@ process CALC_UAR{
 
     tag { "calculating_uar_${chrom}" }
     label "oneCpu"
-    container "popgen48/cldla_rpackages:1.0.0"
+    container "popgen48/cldla_python_r_packages:1.0.0"
     //conda "${baseDir}/environment.yml"
     //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //    'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py39hcada746_0':

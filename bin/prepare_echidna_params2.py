@@ -1,7 +1,8 @@
 import sys
 
 def prepare_params(infile, numdiplo, chrom_giv, chromwind_giv, pheno_file, model):
-    outfile = ".".join(chromwind_giv.split(".")[:-1])+".as" if model == "h1" else chrom_giv.strip(".giv")+".as"
+    outfile ="."+ ".".join(chromwind_giv.split(".")[-4:-1])+".as"
+    print(outfile)
     ilc = 0
     with open(outfile,"w") as dest:
         with open(infile) as source:

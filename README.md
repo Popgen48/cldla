@@ -62,7 +62,7 @@ For more details about the output files and reports, please refer to the
 
 ## Credits
 
-nf-core/cldla was originally written by @BioInf2305.
+nf-core/cldla was originally written by @BioInf2305 with significant contribution from @adityapanchal10
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 

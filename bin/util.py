@@ -109,4 +109,4 @@ def get_MAP(map_path, positions, hzgys):
             
 def get_PAR(par_path, window_size, window_number, n_samples):
     with open(par_path, 'w') as file:
-        file.write(f'100\n100\n{window_size+1}\n{window_number+1 if window_number <= int(window_size/2) else int(window_size/2)+1}\n{n_samples}')
+        file.write(f'100\n100\n{window_size+1}\n{window_number if window_number <= int(window_size/2) else int(window_size/2)+1}\n{n_samples}')

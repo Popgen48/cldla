@@ -1,12 +1,8 @@
 process CALC_LRT_RATIO{
 
     tag { "calculating_lrt_ratio_${chrom}" }
-    label "oneCpu"
-    //container "popgen48/cldla_rpackages:1.0.0"
-    //conda "${baseDir}/environment.yml"
-    //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-    //    'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py39hcada746_0':
-    //    'biocontainers/pysam:v0.15.2ds-2-deb-py3_cv1' }"
+    label "process_single"
+    container "popgen48/cldla_rpackages:1.0.0"
     publishDir("${params.outdir}/echidna/LRT_ratio/${chrom}", mode:"copy")
 
     input:

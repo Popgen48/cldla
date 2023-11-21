@@ -23,10 +23,14 @@ process PLINK2_VCF {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta}"
     def mem_mb = task.memory.toMega()
+    def max_chrom = params.num_autosomes
+
     """
     plink2 \\
         --threads $task.cpus \\
         --memory $mem_mb \\
+        --chr-set ${max_chrom} \\
+        --double-id \\
         $args \\
         --vcf $vcf \\
         --make-bed \\

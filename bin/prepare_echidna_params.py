@@ -34,7 +34,7 @@ def prepare_params(infile, numdiplo, chrom_giv, chromwind_giv, pheno_file, model
                             print("iDip should be present in the parameter file")
                             sys.exit(1)
                     else:
-                        line = line.replace(' giv(iDip,2) !r',"")
+                        line = line.replace(' giv2(iDip) !r',"")
                     dest.write(f"{line}")
                     dest.write("\n")
 

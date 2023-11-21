@@ -92,11 +92,7 @@
                     "type": "string",
                     "description": "file containing ids of chromosome on which cLDLA will be carried out"
                 },
-                "wombat_params": {
-                    "type": "string",
-                    "description": "parameter template for wombat"
-                },
-                "run_wombat": {
+                "run_asreml": {
                     "type": "boolean",
                     "description": "whether to run wombat"
                 },
@@ -104,6 +100,26 @@
                     "type": "boolean",
                     "default": true,
                     "description": "whether to run wombat serially on each window"
+                },
+                "covar": {
+                    "type": "string",
+                    "description": "file containing qualitative variable for each individual to estimate heritability"
+                },
+                "qcovar": {
+                    "type": "string",
+                    "description": "file containing quantitative variables for each individual to estimate heritability"
+                },
+                "num_autosomes": {
+                    "type": "number",
+                    "description": "total number of autosomes in the dataset"
+                },
+                "estimate_h2": {
+                    "type": "boolean",
+                    "description": "whether to estimate heritability using gcta tool"
+                },
+                "n_permutation_h2": {
+                    "type": "integer",
+                    "description": "create \"n\" dataset to calculate standard error to estimate h2"
                 }
             }
         },

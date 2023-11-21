@@ -1,12 +1,8 @@
 process RUN_ECHIDNA{
 
     tag { "running_echidna_${chrom}" }
-    label "process_single"
-    //container "popgen48/cldla_rpackages:1.0.0"
-    //conda "${baseDir}/environment.yml"
-    //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-    //    'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py39hcada746_0':
-    //    'biocontainers/pysam:v0.15.2ds-2-deb-py3_cv1' }"
+    label "process_medium"
+    maxForks 1
     publishDir("${params.outdir}/echidna/${chrom}", mode:"copy")
 
     input:
@@ -22,7 +18,7 @@ process RUN_ECHIDNA{
         echidna_params = params.echidna_params
         win_ginv_base = hap==[] ? chrom+"_00.00": win_ginv.getName()
         chrom_ginv_base = chrom_ginv.getName()
-        new_prefix = hap==[] ? chrom+"_00":hap.getName().minus('.Hap')
+        new_prefix = hap==[] ? chrom_ginv.getName().minus('.giv'):hap.getName().minus('.Hap')
 
         if( hap != [] ){
         

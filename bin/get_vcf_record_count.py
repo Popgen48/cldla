@@ -19,8 +19,15 @@ random_window_file = f'{chrom}_random_windows_{n_random_window}.txt'
 
 
 with open(output_file_path, 'w') as output_file:
+    outprefix = 2
     for n_window in range(1,window_count+1):
-        output_file.write(f"{chrom} {n_window}\n")
+        if n_window == 1:
+            while outprefix <= (window_size/2+1):
+                output_file.write(f'{chrom} {n_window} {outprefix}\n')
+                outprefix += 1
+        else:
+            output_file.write(f'{chrom} {n_window} {outprefix}\n')
+            outprefix += 1
 
 n_random_l = random.sample(list(range(window_count)),n_random_window)
 

@@ -59,9 +59,15 @@ include { RUN_ECHIDNA as RUN_ECHIDNA_H1 } from '../modules/local/echidna/run_ech
 include { RUN_ECHIDNA as RUN_ECHIDNA_H0 } from '../modules/local/echidna/run_echidna'
 include { RUN_ECHIDNA_SERIAL as RUN_ECHIDNA_SERIAL_H1 } from '../modules/local/echidna/run_echidna_serial'
 include { RUN_ECHIDNA as RUN_ECHIDNA_PERMUTATION } from '../modules/local/echidna/run_echidna'
-include { RUN_WOMBAT } from '../modules/local/wombat/run_wombat'
+include { RUN_ASREML_SERIAL } from '../modules/local/asreml/run_asreml_serial'
 include { CALC_LRT_RATIO } from '../modules/local/calc_lrt_ratio'
 include { RANDOMPHENO_CREATE } from '../modules/local/randompheno/randompheno_create'
+include { MAKE_GRM } from '../modules/local/gcta/make_grm'
+include { REML_GRM } from '../modules/local/gcta/reml_grm'
+include { CREATE_INPUTS } from '../modules/local/gcta/create_inputs'
+include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randompheno_create'
+include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
+include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
 //
 // MODULE: Installed directly from nf-core/modules
 //
@@ -103,6 +109,8 @@ workflow CLDLA {
         }
         
         
+    pheno_f = Channel.fromPath(params.pheno_file) //read phenotype file of echidna
+
     //
     // MODULE: filter vcf based on maf and sample inclusion-exclusion
     //
@@ -132,6 +140,63 @@ workflow CLDLA {
     BCFTOOLS_CONCAT(
         t_output_vcf.map{prefix,vcf->tuple(prefix,vcf,[])}
     )
+
+    // determine whether or not to estimate heritability, note that cldla and estimating heritability are mutually exclusive process
+
+    if ( params.estimate_h2 ){
+
+        PLINK2_VCF(
+            BCFTOOLS_CONCAT.out.vcf
+        )
+
+        MAKE_GRM(
+            PLINK2_VCF.out.bed,
+            PLINK2_VCF.out.fam,
+            PLINK2_VCF.out.bim
+        )
+        
+    
+
+        qcovar_file = Channel.fromPath(params.qcovar)
+        
+        covar_file = Channel.fromPath(params.covar)
+
+        CREATE_INPUTS(
+            pheno_f,
+            qcovar_file.map{q->q=="none"?[]:q},
+            covar_file.map{c->c=="none"?[]:c}
+        )
+
+        gi_gnb_gb = MAKE_GRM.out.gcta_grm_id.combine(MAKE_GRM.out.gcta_grm_n_bin).combine(MAKE_GRM.out.gcta_grm_bin)
+
+        gi_gnb_gb_p_q_c = gi_gnb_gb.combine(CREATE_INPUTS.out.gcta_phe).combine(CREATE_INPUTS.out.gcta_qcovar).combine(CREATE_INPUTS.out.gcta_covar)
+        
+
+        REML_GRM(
+            gi_gnb_gb_p_q_c.map{gi,gnb,gb,p,q,c->tuple(gi,gnb,gb,p,q=="none"?[]:q,c=="none"?[]:c)}
+        )
+
+        H2_RANDOMPHENO_CREATE(
+            CREATE_INPUTS.out.gcta_phe
+        )
+        
+        ps = H2_RANDOMPHENO_CREATE.out.pheno_he.flatten()
+
+        gi_gnb_gb_ps_q_c = gi_gnb_gb.combine(ps).combine(CREATE_INPUTS.out.gcta_qcovar).combine(CREATE_INPUTS.out.gcta_covar)
+
+        REML_GRM_SIM(
+            gi_gnb_gb_ps_q_c.map{gi,gnb,gb,ps,q,c->tuple(gi,gnb,gb,ps,q=="none"?[]:q,c=="none"?[]:c)}
+        )
+
+        PLOT_H2_HISTOGRAM(
+            REML_GRM.out.gcta_hsq,
+            REML_GRM_SIM.out.gcta_hsq.collect()
+        )
+        
+
+    }
+
+    else{
 
     mergedvcf_chrom = BCFTOOLS_CONCAT.out.vcf.map{chrom,vcf->vcf}.combine(chrom) // use "chrom" value splitted on line number 81
 
@@ -167,9 +232,9 @@ workflow CLDLA {
     CREATEHAPLO_RECORD(
         BCFTOOLS_VIEW.out.vcf.combine(chrom,by:0)
     )
-    chrom_window = CREATEHAPLO_RECORD.out.record.splitText().map{a->tuple(a.split()[0], a.split()[1])} //read window file line by line
+    chrom_window_out = CREATEHAPLO_RECORD.out.record.splitText().map{a->tuple(a.split()[0], a.split()[1], a.split()[2])} //read window file line by line
 
-    chrom_window_vcf = chrom_window.combine(BCFTOOLS_VIEW.out.vcf, by: 0) // combine filtered vcf file 
+    chrom_window_out_vcf = chrom_window_out.combine(BCFTOOLS_VIEW.out.vcf, by: 0) // combine filtered vcf file 
 
 
     //
@@ -177,8 +242,9 @@ workflow CLDLA {
     //
 
     CREATE_HAPMAP(
-        chrom_window_vcf
+        chrom_window_out_vcf
     )
+
 
     //
     // MODULE: calculate grm, its bending and get inverse of grm for each window given outputs from the previous module
@@ -202,14 +268,12 @@ workflow CLDLA {
 
     chr_hap_map_winginv_chromginv = chr_hap_map_winginv.combine(UAR_INVERSE.out.chrom_ginv,by:0) // combine inverse of uar matrix of the same chromosome (key is chromosome)
 
-    pheno_f = Channel.fromPath(params.pheno_file) //read phenotype file of echidna
     
     //
     // MODULE: run echidna for H1 hypothesis i.e. for each window
     //
 
-    /*
-    if( ! params.run_wombat ){
+    if( ! params.run_asreml ){
 
         if( ! params.run_window_serial ){
             RUN_ECHIDNA_H1(
@@ -234,29 +298,27 @@ workflow CLDLA {
             )
         }
         else{
-            h_t = chr_hap_map_winginv_chromginv.map{chr, hap, map_f, winv, cginv ->hap}.collect()
-            m_t = chr_hap_map_winginv_chromginv.map{chr, hap, map_f, winv, cginv ->map_f}.collect()
-            w_t = chr_hap_map_winginv_chromginv.map{chr, hap, map_f, winv, cginv ->winv}.collect()
-            c_t = chr_hap_map_winginv_chromginv.map{chr, hap, map_f, winv, cginv ->cginv}.unique()
-
+            c_h_m_w_c = chr_hap_map_winginv_chromginv.groupTuple().map{c,h,m,w,ci->tuple(c,h,m,w,ci.unique())}
+    
             RUN_ECHIDNA_SERIAL_H1(
-                    h_t,
-                    m_t,
-                    w_t,
-                    c_t,
-                    pheno_f
+                c_h_m_w_c
             )
 
         }
     }
     else{
-        RUN_WOMBAT(
-            chr_hap_map_winginv_chromginv.combine(pheno_f)
-        )
 
+            c_h_m_w_c = chr_hap_map_winginv_chromginv.groupTuple().map{c,h,m,w,ci->tuple(c,h,m,w,ci.unique())}
+
+            RUN_ASREML_SERIAL(
+                c_h_m_w_c
+            )
+
+
+        }
     }
 
-    if (params.permutation_test){
+    if ( params.permutation_test && !params.estimate_h2 ){
                 //read file of random chromosome window generated by CREATEHAPLO_RECORD module, important to remove newline character to match key
                 chrmwin_outprefix = CREATEHAPLO_RECORD.out.random_record.splitText().map{a->a.replaceAll("[\n\r]\$", "")}.combine(outprefix)
 
@@ -289,7 +351,6 @@ workflow CLDLA {
                     chrom_ginv_hap_map_ranpheno_uarinv.map{chrom, ginv, hap, map_f, phe, uar->tuple(chrom, hap, map_f, ginv, uar, phe)}
                 )
     }
-    */
 }
 
 /*

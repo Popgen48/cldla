@@ -8,3 +8,4 @@ testing*
 *.pyc
 /bin/Echidna
 /bin/plotconv
+extra/

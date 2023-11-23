@@ -2,8 +2,15 @@
 import sys
 import pysam
 
+def pheno_to_list(pheno_file):
+    indi_list = []
+    with open(pheno_file) as source:
+        for line in source:
+            line = line.rstrip().split()
+            indi_list.append(line[1])
+    return indi_list
 
-def read_vcf(vcf_path, chrm):
+def read_vcf(vcf_path, chrm, indi_list):
     # dictionary to store samples
     sample_genotypes = {}
     # dictionary to store MAF
@@ -18,7 +25,7 @@ def read_vcf(vcf_path, chrm):
                 0: record.ref[0],
                 1: record.ref[0] if record.alts[0] == "." else record.alts[0],
             }
-            for sample in record.samples:
+            for sample in indi_list:
                 genotypes_t = record.samples[sample]["GT"]
                 genotype_lt = []
                 if sample not in sample_genotypes:
@@ -47,10 +54,11 @@ def write_lgen(sample_genotypes, snpid_l, outprefix):
                 dest.write(sample + "\t" + snpid_l[i] + "\t" + "\t".join(v) + "\n")
 
 
-def vcf_to_lgen(vcf_path, chrom, outprefix):
-    sample_genotypes, snpid_l = read_vcf(vcf_path, chrom)
+def vcf_to_lgen(vcf_path, chrom, pheno_file, outprefix):
+    indi_list = pheno_to_list(pheno_file)
+    sample_genotypes, snpid_l = read_vcf(vcf_path, chrom, indi_list)
     write_lgen(sample_genotypes, snpid_l, outprefix)
 
 
 if __name__ == "__main__":
-    vcf_to_lgen(sys.argv[1], sys.argv[2], sys.argv[3])
+    vcf_to_lgen(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

@@ -12,7 +12,7 @@ def generate_pseudo_pheno(phe_file, chrom, col_pheno, num_dataset):
             lc_l.append(line)
     for n in range(int(num_dataset)):
         shuffle(pheno_l)
-        with open(f"{chrom}_{n}.phe","w") as dest:
+        with open(f"{chrom}_{n+2}.phe","w") as dest:
             for i,v in enumerate(lc_l):
                 v.insert(int(col_pheno)-1,pheno_l[i])
                 dest.write(" ".join(v)+"\n")

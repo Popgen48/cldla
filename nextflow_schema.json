@@ -120,6 +120,11 @@
                 "n_permutation_h2": {
                     "type": "integer",
                     "description": "create \"n\" dataset to calculate standard error to estimate h2"
+                },
+                "lrt_threhold": {
+                    "type": "number",
+                    "default": 18,
+                    "description": "lrt values above which the values are significant"
                 }
             }
         },

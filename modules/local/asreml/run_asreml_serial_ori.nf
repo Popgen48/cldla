@@ -1,26 +1,21 @@
-process RUN_ECHIDNA_SERIAL{
+process RUN_ASREML_SERIAL{
 
-    tag { "running_echidna_serial" }
+    tag { "running_asreml_serial" }
     label "process_medium"
     maxForks 1
-    publishDir("${params.outdir}/echidna/", mode:"copy")
+    publishDir("${params.outdir}/asreml_serial/", mode:"copy")
 
     input:
         tuple val(chrom), file(hap), file(map_f), file(win_ginv), file(chrom_ginv), file(pheno_file)
 
     output:
-        //path ("*.{as,esr}"), emit: chrom_as
         path ("*.zip" ), emit:chrom_zip
         path ("*.lrt.out"), emit:lrt_out
-        //path ( "*.llik" ), emit: chrom_llik
         
     
     script:
         
         echidna_params = params.echidna_params
-        //pheno_file = params.pheno_file
-        //win_ginv_base = hap==[] ? chrom+"_00.00": win_ginv.getName()
-        //new_prefix = hap==[] ? chrom+"_00":hap.getName().minus('.Hap')
 
         
         """
@@ -32,21 +27,13 @@ process RUN_ECHIDNA_SERIAL{
 
                 python ${baseDir}/bin/prepare_echidna_params.py ${echidna_params} na \${gin} na ${pheno_file} h0
 
-                ${baseDir}/bin/Echidna -w2ro \${outgin}.as
+                asreml -NS5 \${outgin}.as
 
                 tmp_arr=(\${gin//./ })
 
                 chrom_array+=(\${tmp_arr[-3]})
 
-                cat \${gin} > ./\${outgin}/\${outgin}.giv
-
-                python ${baseDir}/bin/extract_loglik.py ./\${outgin}/\${outgin}.esr none \${outgin}.h0.llik
-
-                zip -r \${outgin}.zip ./\${outgin}/
-
-                rm *.{esk,eqo}
-
-                rm -r ./\${outgin}
+                python ${baseDir}/bin/extract_loglik.py \${outgin}.asr none \${outgin}.h0.llik
 
             done                
 
@@ -62,34 +49,19 @@ process RUN_ECHIDNA_SERIAL{
 
                 python ${baseDir}/bin/prepare_echidna_params.py ${echidna_params} \${diplo} \${ar[0]}.\${ar[1]}.00.giv \${outprefix}.giv \${outprefix}.phe h1
 
-                ${baseDir}/bin/Echidna -w2ro \${outprefix}.as
+                asreml -NS5 \${outprefix}.as
                 
-                rm *.{esk,eqo}
+                rm *.{tsv,tmp,ask,veo,rsv,msv,vvp,yht}
 
-                cat \${outprefix}.giv > ./\${outprefix}/\${outprefix}.giv
-
-                cat \${outprefix}.phe > ./\${outprefix}/\${outprefix}.phe
-
-                python ${baseDir}/bin/extract_loglik.py ./\${outprefix}/\${outprefix}.esr \${outprefix}.Map \${outprefix}.h1.llik
-
-                zip -r \${outprefix}.zip ./\${outprefix}/
-
-                rm -r ./\${outprefix}/
+                python ${baseDir}/bin/extract_loglik.py \${outprefix}.asr \${outprefix}.Map \${outprefix}.h1.llik
 
             done    
         
         for chrom in \${chrom_array}
             do
-
                 mkdir \${chrom}
 
-                mv *.\${chrom}.*.zip ./\${chrom}/
-
-                mv *\${chrom}.*h1.llik ./\${chrom}/
-
-                mv *\${chrom}.*h0.llik ./\${chrom}/
-
-                #mv *.\${chrom}.*.{llik,as,asr,res,sln} ./\${chrom}/
+                mv *.\${chrom}.*.{llik,as,asr,res,sln} ./\${chrom}/
 
                 cd ./\${chrom}
 
@@ -101,15 +73,10 @@ process RUN_ECHIDNA_SERIAL{
     
                 cd ..
 
-                zip -r \${chrom}.echidna.out.zip ./\${chrom}/
-
-                rm -r ./\${chrom}/
+                zip -r \${chrom}.asreml.out.zip ./\${chrom}/
 
             done
 
-        #unset chrom_array
-
-        #unset tmp_arr
 
         """ 
 }

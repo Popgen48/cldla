@@ -1,7 +1,7 @@
 import sys
 
 def prepare_params(infile, numdiplo, chrom_giv, chromwind_giv, pheno_file, model):
-    outfile = ".".join(chromwind_giv.split(".")[:-1])+".as" if model == "h1" else chrom_giv.strip(".giv")+".as"
+    outfile = ".".join(pheno_file.split(".")[:-1])+".as" if model == "h1" else chrom_giv.strip(".giv")+".as"
     ilc = 0
     with open(outfile,"w") as dest:
         with open(infile) as source:
@@ -35,6 +35,7 @@ def prepare_params(infile, numdiplo, chrom_giv, chromwind_giv, pheno_file, model
                             sys.exit(1)
                     else:
                         line = line.replace(' giv2(iDip) !r',"")
+                        line = line.replace( ' giv(iDip,2) !r',"")
                     dest.write(f"{line}")
                     dest.write("\n")
 

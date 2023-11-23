@@ -15,10 +15,11 @@ process VCFTOLGEN{
     script:
         
         dataset_id = params.output_prefix
+        pheno_file = params.pheno_file
 
         """
         
-        python3 ${baseDir}/bin/vcf_to_lgen.py ${vcf} ${chrom} ${dataset_id}_no_${chrom}
+        python3 ${baseDir}/bin/vcf_to_lgen.py ${vcf} ${chrom} ${pheno_file} ${dataset_id}_no_${chrom}
 
         """ 
 }

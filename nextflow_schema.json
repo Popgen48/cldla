@@ -92,7 +92,7 @@
                     "type": "string",
                     "description": "file containing ids of chromosome on which cLDLA will be carried out"
                 },
-                "run_asreml": {
+                "asreml": {
                     "type": "boolean",
                     "description": "whether to run wombat"
                 },
@@ -328,5 +328,16 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "echidna": {
+            "type": "boolean",
+            "description": "use echidna to estimate likelihood of the model"
+        },
+        "airemlf90": {
+            "type": "boolean",
+            "description": "use aireml to estimate likelihood of the model",
+            "default": true
+        }
+    }
 }

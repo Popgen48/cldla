@@ -3,32 +3,29 @@ import pandas as pd
 import yaml
 from yaml.loader import SafeLoader
 import math
-from bokeh.plotting import figure
 from bokeh.models import (
     HoverTool,
     ColumnDataSource,
-    Range1d,
     Span,
     CustomJS,
     TapTool,
 )
-from bokeh.plotting import figure
 from bokeh.plotting import figure, save, output_file
 from bokeh.models.tickers import FixedTicker
 
 
-class PlotSigSelResults:
+class InteractiveManhattanplot:
     def __init__(
-        self, sel_result_out, yml_file, tajimasd_cutoff, window_size, y_label, outprefix
+        self, chrom_cord_val, yml_file, cutoff, window_size, y_label, outprefix
     ):
         self.outprefix = outprefix  # prefix of the output file
-        self.sel_result_out = sel_result_out
+        self.chrom_cord_val = chrom_cord_val # input file should be sorted by chromosome id i.e. 1,2,3,4,...,n
         self.yml_file = yml_file
-        self.tajimasd_cutoff = float(tajimasd_cutoff)
+        self.cutoff = float(cutoff)
         self.window_size = int(window_size) #use for ensembl link
-        self.min_score = 0  # important to set the min cordi of y axis
-        self.max_score = 0  # important to set the maxi cordi of y axis
-        self.y_label = y_label  # label will determine the hovering points
+        #self.min_score = 0  # important to set the min cordi of y axis
+        #self.max_score = 0  # important to set the maxi cordi of y axis
+        self.y_label = y_label  # label will determine the hovering points, has to be one of the string present in self.upper_hover or tajimas_d
         self.upper_hover = ["fst_values","LRT_values"]
         self.axis_chrom_dict = (
             {}
@@ -40,15 +37,14 @@ class PlotSigSelResults:
         """
         with open(self.yml_file, "r") as p:
             params = yaml.load(p, Loader=SafeLoader)
-        self.figure_width = params["width"]
-        self.figure_height = params["height"]
-        self.chrom_label_orientation = params["chrom_label_orientation"]
-        self.legend_font_size = params["legend_font_size"]
-        self.label_font_size = params["label_font_size"]
-        self.fil_alpha = params["fil_alpha"]
-        self.ensembl_link = params["ensembl_link"]
-        # self.y_label = params["y_label"]
-        self.color_list = params["color_list"]
+        self.figure_width = params["width"] # determine the width of the plot
+        self.figure_height = params["height"] # determine the height of the plot
+        self.chrom_label_orientation = params["chrom_label_orientation"] # determine the angle at which the label will be placed below the X-axis
+        self.legend_font_size = params["legend_font_size"] # determine the font size of the legend
+        self.label_font_size = params["label_font_size"] # determine the font size of the label
+        self.fil_alpha = params["fil_alpha"] # determine the intensity of the color filled in the circle
+        self.ensembl_link = params["ensembl_link"] # source link of the ensembl reference
+        self.color_list = params["color_list"] # color list
 
     def add_nonsigni_df(self, pd1):
         """
@@ -65,7 +61,7 @@ class PlotSigSelResults:
 
     def add_signi_df(self, pd2):
         """
-        plot the data of signifincat windows
+        plot the data of significant windows
         """
         source_t = ColumnDataSource(pd2)
         t = self.p.circle(
@@ -114,16 +110,8 @@ class PlotSigSelResults:
         self.p.xaxis.major_label_orientation = math.radians(
             self.chrom_label_orientation
         )
-        # self.p.y_range = Range1d(
-        #    round(self.min_score) + 1
-        #    if self.min_score < round(self.min_score)
-        #    else round(self.min_score),
-        #    round(self.max_score) + 1
-        #    if self.max_score < round(self.max_score)
-        #    else round(self.max_score),
-        # )
         hline = Span(
-            location=self.tajimasd_cutoff,
+            location=self.cutoff,
             dimension="width",
             line_color="red",
             line_width=3,
@@ -135,45 +123,35 @@ class PlotSigSelResults:
         self.p.yaxis.axis_label = self.y_label
 
     def sel_out_to_list(self):
-        df_list = []
-        df_list_t = []
-        chrom_list = []
-        with open(self.sel_result_out) as source:
+        df_list = [] # store the record for which the ensembl database will not be linked
+        df_list_t = [] # store the record for which the ensembl database will be linked
+        chrom_list = [] # store the chromosome id
+        with open(self.chrom_cord_val) as source:
             for line in source:
                 line = line.rstrip().split()
-                if line[-1] != "-nan":
-                    self.min_score = (
-                        self.min_score
-                        if float(line[-1]) > self.min_score
-                        else float(line[-1])
-                    )
-                    self.max_score = (
-                        self.max_score
-                        if float(line[-1]) < self.max_score
-                        else float(line[-1])
-                    )
+                if line[-1] != "-nan": # this takes into account "nan" values generated by the vcftools output for tajimas_d, fst and pi
                     tmp_list = []
                     if line[0] not in chrom_list:
                         if len(chrom_list) != 0:
-                            self.axis_chrom_dict[cum_cord_1] = chrom_list[-1]
-                        chrom_list.append(line[0])
+                            self.axis_chrom_dict[cum_cord_1] = chrom_list[-1] # set starting cord of new chromosome as last value of the previous chrom, for first chrom?
+                        chrom_list.append(line[0]) 
                         color = (
                             self.color_list[0]
                             if len(chrom_list) % 2 == 0
                             else self.color_list[1]
                         )
                     cum_cord_1 = (
-                        int(list(self.axis_chrom_dict.keys())[-1]) + int(line[1])
+                        int(list(self.axis_chrom_dict.keys())[-1]) + int(line[1]) # to maintain continuity, add the new chrom's cordinates to the last cord of previous chrom
                         if len(chrom_list) > 1
-                        else int(line[1])
+                        else int(line[1]) # if its first chromosome, keep the cord as is
                     )
                     chrom = line[0]
                     cord = line[1]
                     p_val = float(line[-1])
-                    tmp_list = [chrom, cord, cum_cord_1, p_val, color]
+                    tmp_list = [chrom, cord, cum_cord_1, p_val, color] # original cord ('cord') -> link record to ensembl, cum_cord_1 is updated cord, line 143
                     if self.y_label not in self.upper_hover:
                         if (
-                            p_val < float(self.tajimasd_cutoff)
+                            p_val < float(self.cutoff)
                             and self.ensembl_link != "none"
                         ):
                             tmp_list.append(
@@ -185,11 +163,11 @@ class PlotSigSelResults:
                                 + str(int(cord) + self.window_size)
                             )
                         df_list.append(tmp_list[:]) if p_val > float(
-                            self.tajimasd_cutoff
+                            self.cutoff
                         ) else df_list_t.append(tmp_list[:])
                     else:
                         if (
-                            p_val > float(self.tajimasd_cutoff)
+                            p_val > float(self.cutoff)
                             and self.ensembl_link != "none"
                         ):
                             tmp_list.append(
@@ -201,8 +179,9 @@ class PlotSigSelResults:
                                 + str(int(cord) + self.window_size)
                             )
                         df_list_t.append(tmp_list[:]) if p_val > float(
-                            self.tajimasd_cutoff
+                            self.cutoff
                         ) else df_list.append(tmp_list[:])
+            print(cum_cord_1)
             self.axis_chrom_dict[cum_cord_1] = chrom_list[-1]
         pd1 = pd.DataFrame(
             df_list, columns=["chrom", "cord", "cum_cord", "p_val", "col"]
@@ -213,6 +192,7 @@ class PlotSigSelResults:
             if self.ensembl_link != "none"
             else ["chrom", "cord", "cum_cord", "p_val", "col"],
         )
+        print(self.axis_chrom_dict)
         return pd1, pd2
 
     def main_func(self):
@@ -228,7 +208,7 @@ class PlotSigSelResults:
 
 
 if __name__ == "__main__":
-    obk = PlotSigSelResults(
+    obk = InteractiveManhattanplot(
         sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
     )
     obk.main_func()

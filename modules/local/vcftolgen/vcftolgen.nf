@@ -15,7 +15,7 @@ process VCFTOLGEN{
     script:
         
         dataset_id = params.output_prefix
-        pheno_file = params.pheno_file
+        pheno_file = params.include_samples
 
         """
         

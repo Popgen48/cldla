@@ -6,7 +6,7 @@ process PLOT_LRT_RATIO{
     publishDir("${params.outdir}/${tool}/", mode:"copy")
 
     input:
-        tuple path(lrt_files)
+        path(lrt_files)
 
     output:
         path ( "*.html" )

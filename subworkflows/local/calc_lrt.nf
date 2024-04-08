@@ -3,6 +3,8 @@ include { RUN_ECHIDNA as RUN_ECHIDNA_H0 } from '../../modules/local/echidna/run_
 include { RUN_ECHIDNA_SERIAL as RUN_ECHIDNA_SERIAL_H1 } from '../../modules/local/echidna/run_echidna_serial'
 include { RUN_ECHIDNA as RUN_ECHIDNA_PERMUTATION } from '../../modules/local/echidna/run_echidna'
 include { RUN_ASREML_SERIAL } from '../../modules/local/asreml/run_asreml_serial'
+include { RUN_ASREML_WINDOW as RUN_ASREML_H1 } from '../../modules/local/asreml/run_asreml_window.nf'
+include { RUN_ASREML_WINDOW as RUN_ASREML_H0 } from '../../modules/local/asreml/run_asreml_window.nf'
 include { RUN_ASREML_SERIAL as RUN_ASREML_SERIAL_PERMUTE } from '../../modules/local/asreml/run_asreml_serial'
 include { CALC_LRT_RATIO } from '../../modules/local/calc_lrt_ratio'
 include { PLOT_LRT_RATIO } from '../../modules/local/plot_lrt_ratio'
@@ -69,6 +71,32 @@ workflow CALC_LRT{
 
             PLOT_LRT_RATIO(
                 CALC_LRT_RATIO.out.lrt.collect()
+            )
+
+
+            }
+
+            if( params.asreml ) {
+
+            //
+            // MODULE: run echidna for H1 hypothesis i.e. for each window
+            //
+            RUN_ASREML_H1(
+                chr_hap_map_winginv_chromginv_pheno
+            )
+
+            //
+            // MODULE: run echidna for H0 hypothesis i.e. for each chromosome without ginv file of window 
+            //
+        
+            RUN_ASREML_H0(
+                chr_chrinv_phe.map{chr, chrinv, phe->tuple(chr, [], [], [], chrinv, phe)}
+            )
+
+            chrom_h0llk_h1llk = RUN_ASREML_H0.out.chrom_llik.combine(RUN_ASREML_H1.out.chrom_llik.groupTuple(), by:0)
+            
+            CALC_LRT_RATIO(
+                chrom_h0llk_h1llk
             )
 
 

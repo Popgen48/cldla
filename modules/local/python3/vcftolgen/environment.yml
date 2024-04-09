@@ -1,0 +1,8 @@
+name: python_vcf_to_lgen
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pysam==0.22.0
+  - python==3.10

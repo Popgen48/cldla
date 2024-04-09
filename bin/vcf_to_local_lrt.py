@@ -4,7 +4,8 @@ import re
 import pysam
 import subprocess
 import argparse
-import numpy as np
+import statistics
+#import numpy as np # not in pysam singularity 
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
 
@@ -377,7 +378,7 @@ class VcfToLrt:
                 positions = g_list_pos_dict[1]
                 hzgys = g_list_homo_dict[1]
                 window_number += 1
-                win_min_point = np.median([list(positions.values())])
+                win_min_point = statistics.median(list(positions.values()))
                 if tool == "asreml":
                     window_process_list.append(
                         (

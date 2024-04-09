@@ -35,11 +35,6 @@
                     "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
                     "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
                 },
-                "exclude_samples": {
-                    "type": "string",
-                    "description": "file containing ids of the samples to be excluded from vcf filese",
-                    "fa_icon": "far fa-file-alt"
-                },
                 "include_samples": {
                     "type": "string",
                     "description": "samples to be included in vcf files",
@@ -60,17 +55,9 @@
                     "default": "cldla_run1",
                     "description": "output prefix should not contain the dot in it"
                 },
-                "echidna_params": {
-                    "type": "string",
-                    "description": "path to the parameter file containing statistical model"
-                },
                 "pheno_file": {
                     "type": "string",
                     "description": "path to the phenotypes file as recognized by echidna"
-                },
-                "col_pheno": {
-                    "type": "integer",
-                    "description": "the column number containing dependent phenotype variable in phenotype file"
                 },
                 "n_random_pheno": {
                     "type": "number",
@@ -92,22 +79,10 @@
                     "type": "string",
                     "description": "file containing ids of chromosome on which cLDLA will be carried out"
                 },
-                "asreml": {
-                    "type": "boolean",
-                    "description": "whether to run wombat"
-                },
                 "run_window_serial": {
                     "type": "boolean",
                     "default": true,
                     "description": "whether to run wombat serially on each window"
-                },
-                "covar": {
-                    "type": "string",
-                    "description": "file containing qualitative variable for each individual to estimate heritability"
-                },
-                "qcovar": {
-                    "type": "string",
-                    "description": "file containing quantitative variables for each individual to estimate heritability"
                 },
                 "num_autosomes": {
                     "type": "number",
@@ -125,6 +100,16 @@
                     "type": "number",
                     "default": 18,
                     "description": "lrt values above which the values are significant"
+                },
+                "tool": {
+                    "type": "string",
+                    "default": "blupf90",
+                    "description": "tool to estimate variance components",
+                    "enum": ["blupf90", "asreml"]
+                },
+                "par_file": {
+                    "type": "string",
+                    "description": "parameter file of the tool"
                 }
             }
         },
@@ -328,16 +313,5 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ],
-    "properties": {
-        "echidna": {
-            "type": "boolean",
-            "description": "use echidna to estimate likelihood of the model"
-        },
-        "airemlf90": {
-            "type": "boolean",
-            "description": "use aireml to estimate likelihood of the model",
-            "default": true
-        }
-    }
+    ]
 }

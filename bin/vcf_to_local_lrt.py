@@ -425,15 +425,16 @@ class VcfToLrt:
                                 dest.write(f"{chromosome} {result[1]} {result[2]}\n")
                     del g_job_list[:]
                     del window_process_list[:]
-        with Pool(processes=len(g_job_list)) as pool:
-            pool.map(self.create_ginverse, g_job_list, 1)
-        if tool == "asreml":
-            with Pool(processes=1) as pool:
-                results = pool.map(self.asr.run_asreml, window_process_list, 1)
-            with open(outprefix + "_results.txt", "w") as dest:
-                for result in results:
-                    if result:
-                        dest.write(f"{chromosome} {result[1]} {result[2]}\n")
+        if len(g_job_list) > 0:
+            with Pool(processes=len(g_job_list)) as pool:
+                pool.map(self.create_ginverse, g_job_list, 1)
+            if tool == "asreml":
+                with Pool(processes=1) as pool:
+                    results = pool.map(self.asr.run_asreml, window_process_list, 1)
+                with open(outprefix + "_results.txt", "w") as dest:
+                    for result in results:
+                        if result:
+                            dest.write(f"{chromosome} {result[1]} {result[2]}\n")
         vcf.close()
 
     def create_ginverse(self, input_list):

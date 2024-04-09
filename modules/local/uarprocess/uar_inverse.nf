@@ -2,7 +2,7 @@ process UAR_INVERSE{
 
     tag { "uar_inverse_${chrom}" }
     label "process_single"
-    container 'popgen48/cldla_python_r_packages:1.0.0'
+    //container 'popgen48/cldla_python_r_packages:1.0.0'
     publishDir("${params.outdir}/uar_matrix/inverse/${chrom}", mode:"copy")
 
 
@@ -10,20 +10,21 @@ process UAR_INVERSE{
         tuple val(chrom), path(lgen), path(uar)
 
     output:
-        tuple val(chrom), path ("*.giv"), emit: chrom_ginv
+        tuple val(meta), path ("*.giv"), emit: giv
         
     
     script:
 
         dataset_id = params.output_prefix
+        meta = [id:chrom]
         
         
         """
-        ${baseDir}/bin/Bend5 ${uar} ${dataset_id}.${chrom}.B.grm
+        ${baseDir}/bin/bend ${uar} ${dataset_id}.${chrom}.B.grm
 
-        python3 ${baseDir}/bin/ginverse.py ${dataset_id}.${chrom}.B.grm ${dataset_id}.${chrom}.00.giv
+        diplo=\$(awk -v sc=0 '{if(!(\$1 in pop_id)){pop_id[\$1];sc++}}END{print sc}' ${lgen})
 
-
+       ${baseDir}/bin/ginverse \${diplo} ${dataset_id}.${chrom}.B.grm ${dataset_id}.${chrom}.giv
 
         """ 
 }

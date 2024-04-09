@@ -1,4 +1,4 @@
-# Simple script to extract the values from all the samples of a given .VCF file, assign them an id and store in a .hap file
+# Simple script to filter vcf file
 import sys
 import pysam
 import argparse

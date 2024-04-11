@@ -3,7 +3,7 @@ from random import shuffle
 
 def generate_pseudo_pheno(phe_file, chrom, col_pheno, num_dataset):
     lc_l = [] #store the line content of the file excluding the col_pheno
-    pheno_l = [] #store the original file 
+    pheno_l = [] #store the phenotype of original file
     with open(phe_file) as source:
         for line in source:
             line = line.rstrip().split()

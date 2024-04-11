@@ -5,9 +5,9 @@ import pysam
 import subprocess
 import argparse
 import statistics
-#import numpy as np # not in pysam singularity 
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
+from random import shuffle
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -20,51 +20,60 @@ g_job_list = []
 
 class AsremlMethods:
 
-    def prepare_params(self, infile, numdiplo, grm, prefix, model):
-        outfile = f"{prefix}.as" if model == "h1" else grm.rstrip(".giv") + ".as"
-        ilc = 0
-        with open(outfile, "w") as dest:
-            with open(infile) as source:
-                for line in source:
-                    line = line.rstrip()
-                    if not line.startswith("!") and ilc == 0:
-                        dest.write(line)
-                        dest.write("\n")
-                    elif ilc == 0:
-                        if model == "h1":
-                            dest.write(f"iDip {numdiplo} {line}")
+    def prepare_params(self, infile, numdiplo, grm, prefix, model, permutation):
+        outfile_list = (
+            [f"{prefix}.as"] if model == "h1" else [grm.rstrip(".giv") + ".as"]
+        )
+        if permutation and model == "h1":
+            outfile_list.append(f"{prefix}.perm.as")
+        for i, v in outfile_list:
+            ilc = 0
+            with open(v, "w") as dest:
+                with open(infile) as source:
+                    for line in source:
+                        line = line.rstrip()
+                        if not line.startswith("!") and ilc == 0:
+                            dest.write(line)
                             dest.write("\n")
-                        ilc += 1
-                    elif ilc == 1:
-                        dest.write(f"{grm} {line}")
-                        dest.write("\n")
-                        ilc += 1
-                    elif ilc == 2:
-                        if model == "h1":
-                            dest.write(f"{prefix}.giv {line}")
+                        elif ilc == 0:
+                            if model == "h1":
+                                dest.write(f"iDip {numdiplo} {line}")
+                                dest.write("\n")
+                            ilc += 1
+                        elif ilc == 1:
+                            dest.write(f"{grm} {line}")
                             dest.write("\n")
-                        ilc += 1
-                    elif ilc == 3:
-                        if model == "h1":
-                            dest.write(f"{prefix}.dat {line}")
-                        else:
-                            dest.write(f"{prefix} {line}")
-                        dest.write("\n")
-                        ilc += 1
-                    elif ilc == 4:
-                        if model == "h1":
-                            if "iDip" not in line:
-                                print("iDip should be present in the parameter file")
-                                sys.exit(1)
-                        else:
-                            line = line.replace(" giv2(iDip) !r", "")
-                            line = line.replace(" giv(iDip,2) !r", "")
-                        dest.write(f"{line}")
-                        dest.write("\n")
+                            ilc += 1
+                        elif ilc == 2:
+                            if model == "h1" and i == 0:
+                                dest.write(f"{prefix}.giv {line}")
+                                dest.write("\n")
+                            ilc += 1
+                        elif ilc == 3:
+                            if model == "h1" and i == 0:
+                                dest.write(f"{prefix}.dat {line}")
+                            elif model == "h1" and i == 1:
+                                dest.write(f"{prefix}.perm.dat {line}")
+                            else:
+                                dest.write(f"{prefix} {line}")
+                            dest.write("\n")
+                            ilc += 1
+                        elif ilc == 4:
+                            if model == "h1":
+                                if "iDip" not in line:
+                                    print(
+                                        "iDip should be present in the parameter file"
+                                    )
+                                    sys.exit(1)
+                            else:
+                                line = line.replace(" giv2(iDip) !r", "")
+                                line = line.replace(" giv(iDip,2) !r", "")
+                            dest.write(f"{line}")
+                            dest.write("\n")
 
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
-        self.prepare_params(params_file, diplo, grm, phe, model)
+        self.prepare_params(params_file, diplo, grm, phe, model, False)
         rm_file_pattern = ".{ask,aov,msv,res,rsv,sln,tmp,tsv,veo,vvp,yht}"
         command = f"asreml -NS5 {prefix}.as && rm {prefix}{rm_file_pattern}"
         subprocess.call([command], shell=True)
@@ -103,72 +112,84 @@ class AsremlMethods:
 
 class Blupf90Methods:
 
-    def prepare_params(self, infile, numdiplo, grm, prefix, model):
-        param_dict = {
-            "NUMBER_OF_EFFECTS": False,
-            "OBSERVATION(S)": False,
-            "EFFECTS:": False,
-        }
-        rewrite_line = False
-        total_effect = 0
-        with open(prefix + ".params", "w") as dest:
-            dest.write(f"DATAFILE\n{prefix}.dat\n")
-            with open(infile) as source:
-                for line in source:
-                    line = line.rstrip()
-                    if (not line in param_dict and not rewrite_line) or len(line) == 0:
-                        dest.write(line)
-                        dest.write("\n")
-                    elif rewrite_line:
-                        if line != "RANDOM_RESIDUAL VALUES":
-                            pattern = re.compile(r"([0-9]+)")
-                            num_param = int(re.findall(pattern, line)[0])
-                            if not param_dict["EFFECTS:"]:
-                                if last_param == "NUMBER_OF_EFFECTS":
-                                    if model == "h0":
-                                        num_param = num_param
+    def prepare_params(self, infile, numdiplo, grm, prefix, model, permutation):
+        outfile_list = [prefix + ".params"]
+        if permutation and model == "h1":
+            outfile_list.append(prefix + ".perm.params")
+        for i, v in enumerate(outfile_list):
+            with open(v, "w") as dest:
+                if i == 0:
+                    dest.write(f"DATAFILE\n{prefix}.dat\n")
+                else:
+                    dest.write(f"DATAFILE\n{prefix}.perm.dat\n")
+                with open(infile) as source:
+                    rewrite_line = False
+                    total_effect = 0
+                    last_effect = None
+                    param_dict = {
+                        "NUMBER_OF_EFFECTS": False,
+                        "OBSERVATION(S)": False,
+                        "EFFECTS:": False,
+                    }
+                    for line in source:
+                        line = line.rstrip()
+                        if (not line in param_dict and not rewrite_line) or len(
+                            line
+                        ) == 0:
+                            dest.write(line)
+                            dest.write("\n")
+                        elif rewrite_line:
+                            if line != "RANDOM_RESIDUAL VALUES":
+                                pattern = re.compile(r"([0-9]+)")
+                                num_param = int(re.findall(pattern, line)[0])
+                                if not param_dict["EFFECTS:"]:
+                                    if last_param == "NUMBER_OF_EFFECTS":
+                                        if model == "h0":
+                                            num_param = num_param
+                                        else:
+                                            num_param = num_param + 1
                                     else:
-                                        num_param = num_param + 1
+                                        num_param = num_param - 1
+                                    dest.write(str(num_param) + "\n")
+                                    rewrite_line = False
+                                    param_dict[last_param] = False
                                 else:
-                                    num_param = num_param - 1
-                                dest.write(str(num_param) + "\n")
-                                rewrite_line = False
-                                param_dict[last_param] = False
+                                    num_param = (
+                                        num_param
+                                        if total_effect == 0
+                                        else num_param - 1
+                                    )
+                                    dest.write(
+                                        str(num_param)
+                                        + " "
+                                        + " ".join(line.split()[1:])
+                                        + "\n"
+                                    )
+                                    total_effect += 1
+                                    last_effect = num_param
                             else:
-                                num_param = (
-                                    num_param if total_effect == 0 else num_param - 1
-                                )
-                                dest.write(
-                                    str(num_param)
-                                    + " "
-                                    + " ".join(line.split()[1:])
-                                    + "\n"
-                                )
-                                total_effect += 1
-                                last_effect = num_param
+                                if model == "h1":
+                                    dest.write(f"{last_effect+2} {numdiplo} cross")
+                                    dest.write("\n")
+                                dest.write(line + "\n")
+                                rewrite_line = False
                         else:
-                            if model == "h1":
-                                dest.write(f"{last_effect+2} {numdiplo} cross")
-                                dest.write("\n")
+                            param_dict[line] = True
+                            rewrite_line = True
+                            last_param = line
                             dest.write(line + "\n")
-                            rewrite_line = False
-                    else:
-                        param_dict[line] = True
-                        rewrite_line = True
-                        last_param = line
-                        dest.write(line + "\n")
-            dest.write(
-                f"RANDOM_GROUP\n1\nRANDOM_TYPE\nuser_file\nFILE\n{grm}\n(CO)VARIANCES\n1.0\n"
-            )
-            if model == "h1":
                 dest.write(
-                    f"RANDOM_GROUP\n{total_effect+1}\nRANDOM_TYPE\nuser_file\nFILE\n{prefix}.giv\n(CO)VARIANCES\n0.5"
+                    f"RANDOM_GROUP\n1\nRANDOM_TYPE\nuser_file\nFILE\n{grm}\n(CO)VARIANCES\n1.0\n"
                 )
+                if model == "h1":
+                    dest.write(
+                        f"RANDOM_GROUP\n{total_effect+1}\nRANDOM_TYPE\nuser_file\nFILE\n{prefix}.giv\n(CO)VARIANCES\n0.5"
+                    )
+                    dest.write("\n")
+                dest.write(f"OPTION method VCE")
                 dest.write("\n")
-            dest.write(f"OPTION method VCE")
-            dest.write("\n")
-            dest.write(f"OPTION maxrounds 100")
-            dest.write("\n")
+                dest.write(f"OPTION maxrounds 100")
+                dest.write("\n")
 
     def extract_logl(self, log_file):
         pattern = re.compile(r"-2logL([^0-9]+)([0-9.]+)")
@@ -191,7 +212,7 @@ class Blupf90Methods:
 
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
-        self.prepare_params(params_file, diplo, grm, prefix, model)
+        self.prepare_params(params_file, diplo, grm, prefix, model, False)
         self.prepare_datfile(phe, prefix)
         command = f"mkdir {prefix} && mv {prefix}.params ./{prefix} && cp {prefix}.* {prefix} && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
@@ -200,7 +221,8 @@ class Blupf90Methods:
 
     def run_blupf90(self, list_i):
         prefix, h0_logl, mid_win_point, grm = list_i
-        command = f"mkdir {prefix} && mv {prefix}.params ./{prefix} && cp {prefix}.* {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
+        win_ginv = prefix.rstrip(".perm") + ".giv"
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.log")
         if h0_logl != "na" and h1_logl != "na":
@@ -211,6 +233,7 @@ class util:
 
     def prepare_dat_file(self, hap_path, pheno_file, prefix, tool):
         indi_diplo_dict = {}
+        pheno_col = 0
         with open(prefix + ".dat", "w") as dest:
             with open(hap_path) as source:
                 lc = 0
@@ -222,12 +245,17 @@ class util:
                 lc = 0
                 for line in source:
                     line = line.rstrip().split()
+                    pheno_col = len(line) - 1
                     if tool == "blupf90":
                         del line[1]
                     line.append(indi_diplo_dict[lc])
                     dest.write(" ".join(line))
                     dest.write("\n")
                     lc += 1
+        if pheno_col == 0:
+            print("ERROR: phenotype column not set")
+            sys.exit(1)
+        return pheno_col
 
     def get_HAP(self, hap_path, sample_genotypes):
         samples = {}
@@ -300,6 +328,26 @@ class util:
                 ac[record.samples[val]["GT"][1]] += 1
         return ac
 
+    def generate_pseudo_pheno(self, phe_prefix, col_pheno, num_dataset):
+        lc_l = []  # store the line content of the file excluding the col_pheno
+        pheno_l = []  # store the phenotype of original file
+        outfile = phe_prefix + ".perm.dat"
+        infile = phe_prefix + ".dat"
+        print("ENTERING...")
+        with open(infile) as source:
+            for line in source:
+                line = line.rstrip().split()
+                pheno_l.append(line[int(col_pheno) - 1])
+                del line[int(col_pheno) - 1]
+                lc_l.append(line)
+        for n in range(int(num_dataset)):
+            shuffle(pheno_l)
+            with open(outfile, "w") as dest:
+                for i, v in enumerate(lc_l):
+                    v.insert(int(col_pheno) - 1, pheno_l[i])
+                    dest.write(" ".join(v) + "\n")
+                    del v[int(col_pheno) - 1]  # avoid the aliasing issue
+
 
 class VcfToLrt:
 
@@ -313,6 +361,8 @@ class VcfToLrt:
         pheno_file,
         param_file,
         tool,
+        permutation,
+        sig_lrt,
         outprefix,
     ):
         self.u = util()  # object containing general method
@@ -329,6 +379,9 @@ class VcfToLrt:
         window_process_list = (
             []
         )  # list will collect the parameters to run asreml and blupf90
+        window_perm_process_list = (
+            []
+        )  # list will collect the parameters to run asreml and blupf90 on permutated dataset
         # following condition will calculate the log-likelihood value of the null hypothesis
         if tool == "asreml":
             h0_logl = self.asr.run_h0(param_file, "na", grm, pheno_file, "h0")
@@ -387,6 +440,14 @@ class VcfToLrt:
                             win_min_point,
                         )
                     )
+                    if permutation:
+                        window_perm_process_list.append(
+                            (
+                                f"{dataset}.{chromosome}.{window_number}.perm",
+                                float(h0_logl),
+                                win_min_point,
+                            )
+                        )
                 else:
                     window_process_list.append(
                         (
@@ -396,6 +457,15 @@ class VcfToLrt:
                             grm,
                         )
                     )
+                    if permutation:
+                        window_perm_process_list.append(
+                            (
+                                f"{dataset}.{chromosome}.{window_number}.perm",
+                                float(h0_logl),
+                                win_min_point,
+                                grm,
+                            )
+                        )
                 g_job_list.append(
                     (
                         dataset,
@@ -409,6 +479,7 @@ class VcfToLrt:
                         param_file,
                         tool,
                         grm,
+                        permutation,
                     )
                 )
                 del g_list_geno_dict[1]
@@ -417,14 +488,31 @@ class VcfToLrt:
                 if len(g_job_list) == int(num_cores):
                     with Pool(processes=len(g_job_list)) as pool:
                         pool.map(self.create_ginverse, g_job_list, 1)
-                    with Pool(processes=len(window_process_list)) as pool:
-                        results = pool.map(self.blp.run_blupf90, window_process_list, 1)
-                    with open(outprefix + "_results.txt", "a") as dest:
-                        for result in results:
-                            if result:
-                                dest.write(f"{chromosome} {result[1]} {result[2]}\n")
+                    if tool != "asreml":
+                        with Pool(processes=len(window_process_list)) as pool:
+                            results = pool.map(
+                                self.blp.run_blupf90, window_process_list, 1
+                            )
+                        with open(outprefix + "_results.txt", "a") as dest:
+                            for result in results:
+                                if result:
+                                    dest.write(
+                                        f"{chromosome} {result[0]} {result[1]} {result[2]}\n"
+                                    )
+                        if permutation:
+                            with Pool(processes=len(window_perm_process_list)) as pool:
+                                results = pool.map(
+                                    self.blp.run_blupf90, window_perm_process_list, 1
+                                )
+                            with open(outprefix + "_perm_results.txt", "a") as dest:
+                                for result in results:
+                                    if result:
+                                        dest.write(
+                                            f"{chromosome} {result[0]} {result[1]} {result[2]}\n"
+                                        )
+                            del window_perm_process_list[:]
+                        del window_process_list[:]
                     del g_job_list[:]
-                    del window_process_list[:]
         if len(g_job_list) > 0:
             with Pool(processes=len(g_job_list)) as pool:
                 pool.map(self.create_ginverse, g_job_list, 1)
@@ -434,7 +522,18 @@ class VcfToLrt:
                 with open(outprefix + "_results.txt", "w") as dest:
                     for result in results:
                         if result:
-                            dest.write(f"{chromosome} {result[1]} {result[2]}\n")
+                            dest.write(
+                                f"{chromosome} {result[0]} {result[1]} {result[2]}\n"
+                            )
+            else:
+                with Pool(processes=len(window_process_list)) as pool:
+                    results = pool.map(self.blp.run_blupf90, window_process_list, 1)
+                with open(outprefix + "_results.txt", "a") as dest:
+                    for result in results:
+                        if result:
+                            dest.write(
+                                f"{chromosome} {result[0]} {result[1]} {result[2]}\n"
+                            )
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -451,6 +550,7 @@ class VcfToLrt:
             params_file,
             tool,
             grm,
+            permutation,
         ) = input_list
         prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
@@ -461,12 +561,15 @@ class VcfToLrt:
         self.u.get_MAP(map_path, positions, hzgys)
         self.u.get_PAR(par_path, window_size, window_number, n_samples)
 
-        self.u.prepare_dat_file(hap_path, pheno_file, prefix, tool)
+        pheno_col = self.u.prepare_dat_file(hap_path, pheno_file, prefix, tool)
 
         if tool == "asreml":
-            self.asr.prepare_params(params_file, max_d, grm, prefix, "h1")
+            self.asr.prepare_params(params_file, max_d, grm, prefix, "h1", permutation)
         else:
-            self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")
+            self.blp.prepare_params(params_file, max_d, grm, prefix, "h1", permutation)
+
+        if permutation:
+            self.u.generate_pseudo_pheno(prefix, pheno_col, 1)
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
@@ -535,6 +638,22 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("-o", "--outprefix", help="output prefix", required=True)
+    parser.add_argument(
+        "-P",
+        "--permutation",
+        metavar="Bool",
+        help="whether or not to carry out permutation to access the level of significance (True or False)",
+        default=True,
+        required=False,
+    )
+    parser.add_argument(
+        "-S",
+        "--sig_lrt",
+        metavar="Float",
+        help="Threshold for significant LRT value",
+        default=0.00,
+        required=False,
+    )
 
     args = parser.parse_args()
 
@@ -552,5 +671,7 @@ if __name__ == "__main__":
             args.pheno,
             args.params,
             args.tool,
+            args.permutation,
+            args.sig_lrt,
             args.outprefix,
         )

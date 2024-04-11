@@ -181,7 +181,6 @@ class InteractiveManhattanplot:
                         df_list_t.append(tmp_list[:]) if p_val > float(
                             self.cutoff
                         ) else df_list.append(tmp_list[:])
-            print(cum_cord_1)
             self.axis_chrom_dict[cum_cord_1] = chrom_list[-1]
         pd1 = pd.DataFrame(
             df_list, columns=["chrom", "cord", "cum_cord", "p_val", "col"]

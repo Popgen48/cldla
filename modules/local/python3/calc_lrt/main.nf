@@ -2,12 +2,12 @@ process PYTHON3_CALC_LRT{
 
     tag { "${meta.id}" }
     label "process_medium"
-    conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py310h41dec4a_0':
-        'quay.io/biocontainers/pysam:0.22.0--py310h41dec4a_0' }"
+    //conda "${moduleDir}/environment.yml"
+    //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //    'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py310h41dec4a_0':
+    //    'quay.io/biocontainers/pysam:0.22.0--py310h41dec4a_0' }"
     publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:"copy")
-    maxForks 2
+    maxForks 1
 
     input:
         tuple val(meta), path(chrom_giv), path(pheno_file), path(par_file), path(vcf_file)
@@ -22,6 +22,7 @@ process PYTHON3_CALC_LRT{
         chrom = meta.id
         outprefix = params.output_prefix
         window_size = params.window_size
+        num_process = params.n_var_est_process
         tool = params.tool
 
         """

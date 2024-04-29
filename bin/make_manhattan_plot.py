@@ -191,7 +191,6 @@ class InteractiveManhattanplot:
             if self.ensembl_link != "none"
             else ["chrom", "cord", "cum_cord", "p_val", "col"],
         )
-        print(self.axis_chrom_dict)
         return pd1, pd2
 
     def main_func(self):

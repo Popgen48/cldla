@@ -110,6 +110,11 @@
                 "par_file": {
                     "type": "string",
                     "description": "parameter file of the tool"
+                },
+                "n_var_est_process": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "number of chromosomes to be run in parallel for variance component estimation"
                 }
             }
         },

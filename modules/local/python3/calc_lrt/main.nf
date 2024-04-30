@@ -24,9 +24,10 @@ process PYTHON3_CALC_LRT{
         window_size = params.window_size
         num_process = params.n_var_est_process
         tool = params.tool
+        n_perm = params.n_perm
 
         """
-    python3 ${baseDir}/bin/vcf_to_local_lrt.py -v ${vcf_file} -r ${chrom} -w ${window_size} -c ${task.cpus} -g ${chrom_giv} -p ${pheno_file} -a ${par_file} -t ${tool} -o ${outprefix}
+    python3 ${baseDir}/bin/vcf_to_local_lrt.py -v ${vcf_file} -r ${chrom} -w ${window_size} -c ${task.cpus} -g ${chrom_giv} -p ${pheno_file} -a ${par_file} -t ${tool} -o ${outprefix} -n ${n_perm}
 
 
         """ 

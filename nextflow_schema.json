@@ -92,10 +92,6 @@
                     "type": "boolean",
                     "description": "whether to estimate heritability using gcta tool"
                 },
-                "n_permutation_h2": {
-                    "type": "integer",
-                    "description": "create \"n\" dataset to calculate standard error to estimate h2"
-                },
                 "lrt_threhold": {
                     "type": "number",
                     "default": 18,
@@ -115,6 +111,10 @@
                     "type": "integer",
                     "default": 1,
                     "description": "number of chromosomes to be run in parallel for variance component estimation"
+                },
+                "n_perm": {
+                    "type": "integer",
+                    "default": 100
                 }
             }
         },

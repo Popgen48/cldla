@@ -6,9 +6,11 @@ import pysam
 import subprocess
 import argparse
 import statistics
+import random
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
 from random import shuffle
+
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -22,10 +24,11 @@ g_job_list = []
 
 class AsremlMethods:
 
-    def prepare_params(self, infile, numdiplo, grm, prefix, model, permutation):
+    def __init__(self):
+        self.rm_file_pattern = ".{ask,aov,msv,res,rsv,sln,tmp,tsv,veo,vvp,yht}"
+
+    def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [f"{prefix}.as"] if model == "h1" else [grm.rstrip(".giv") + ".as"]
-        if permutation and model == "h1":
-            outfile_list.append(f"{prefix}.perm.as")
         for i, v in enumerate(outfile_list):
             ilc = 0
             with open(v, "w") as dest:
@@ -71,17 +74,15 @@ class AsremlMethods:
 
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
-        self.prepare_params(params_file, diplo, grm, phe, model, False)
-        rm_file_pattern = ".{ask,aov,msv,res,rsv,sln,tmp,tsv,veo,vvp,yht}"
-        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{rm_file_pattern}"
+        self.prepare_params(params_file, diplo, grm, phe, model)
+        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.asr")
         return log_l
 
     def run_asreml(self, list_i):
-        prefix, h0_logl, mid_win_point = list_i
-        rm_file_pattern = ".{ask,aov,msv,res,rsv,sln,tmp,tsv,veo,vvp,yht}"
-        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{rm_file_pattern}"
+        prefix, h0_logl, mid_win_point, grm = list_i
+        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.asr")
         if h0_logl != "na" and h1_logl != "na":
@@ -94,10 +95,10 @@ class AsremlMethods:
             for line in source:
                 line = line.rstrip()
                 if "LogL" in line:
-                    pattern = re.compile(r"LogL=(\s){0,5}([0-9\-]+)")
+                    pattern = re.compile(r"LogL=(\s){0,5}([0-9\-\.]+)")
                     match = re.findall(pattern, line)
                     if len(match) > 0:
-                        conv_logl = float(match[0][1])
+                        conv_logl = round(float(match[0][1]), 4)
                 last_line = line
         if last_line == "na":
             print(f"last line of {asr} could not be read")
@@ -107,13 +108,48 @@ class AsremlMethods:
             conv_logl = "na"
         return conv_logl
 
+    def generate_permutation_param(self, prefix):
+        with open(f"{prefix}.h0.perm.as", "w") as dest1:
+            with open(f"{prefix}.h1.perm.as", "w") as dest2:
+                with open(f"{prefix}.as") as source:
+                    for line in source:
+                        line = line.rstrip()
+                        if f"{prefix}.dat" in line:
+                            dest1.write(line.replace(f"{prefix}.dat", f"{prefix}.h0.perm.dat") + "\n")
+                            dest2.write(line.replace(f"{prefix}.dat", f"{prefix}.h1.perm.dat") + "\n")
+                        elif line.startswith("iDip"):
+                            dest2.write(line + "\n")
+                        elif "giv" in line and "iDip" in line:
+                            dest2.write(line + "\n")
+                            line = line.replace(" giv2(iDip) !r", "")
+                            line = line.replace(" giv(iDip,2) !r", "")
+                            dest1.write(line + "\n")
+                        else:
+                            dest1.write(line + "\n")
+                            dest2.write(line + "\n")
+
+    def run_asreml_permutation(self, prefix):
+        suffix_dict = {"h0": f"{prefix}.h0.perm.as", "h1": f"{prefix}.h1.perm.as"}
+        log_l_dict = {}
+        for k, v in suffix_dict.items():
+            command = f"{asreml_path} -NS5 {v} && rm {prefix}.{k}.perm{self.rm_file_pattern}"
+            subprocess.call([command], shell=True)
+            log_l_dict[k] = self.extract_logl(f"{prefix}.{k}.perm.asr")
+        return -2 * (log_l_dict["h0"] - log_l_dict["h1"]) if "na" not in log_l_dict.values() else None
+
+    def process_permutation_window(self, input_list):
+        u = util()
+        prefix, midpoint, grm = input_list
+        u.generate_pseudo_pheno(prefix, 1)
+        self.generate_permutation_param(prefix)
+        lrt_value = self.run_asreml_permutation(prefix)
+        return prefix, midpoint, lrt_value
+
 
 class Blupf90Methods:
 
-    def prepare_params(self, infile, numdiplo, grm, prefix, model, permutation):
+    def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [prefix + ".params"]
-        if permutation and model == "h1":
-            outfile_list.append(prefix + ".perm.params")
         for i, v in enumerate(outfile_list):
             with open(v, "w") as dest:
                 if i == 0:
@@ -197,7 +233,7 @@ class Blupf90Methods:
 
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
-        self.prepare_params(params_file, diplo, grm, prefix, model, False)
+        self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
         command = f"mkdir {prefix} && mv {prefix}.params ./{prefix} && cp {prefix}.* {prefix} && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
@@ -311,24 +347,27 @@ class util:
                 ac[record.samples[val]["GT"][1]] += 1
         return ac
 
-    def generate_pseudo_pheno(self, phe_prefix, col_pheno, num_dataset):
+    def generate_pseudo_pheno(self, phe_prefix, num_dataset):
         lc_l = []  # store the line content of the file excluding the col_pheno
         pheno_l = []  # store the phenotype of original file
-        outfile = phe_prefix + ".perm.dat"
+        outfile = phe_prefix + ".h1.perm.dat"
         infile = phe_prefix + ".dat"
+        h0_pheno = phe_prefix + ".h0.perm.dat"
         with open(infile) as source:
             for line in source:
                 line = line.rstrip().split()
-                pheno_l.append(line[int(col_pheno) - 1])
-                del line[int(col_pheno) - 1]
+                pheno_l.append(line[-2])
+                del line[-2]
                 lc_l.append(line)
         for n in range(int(num_dataset)):
             shuffle(pheno_l)
-            with open(outfile, "w") as dest:
-                for i, v in enumerate(lc_l):
-                    v.insert(int(col_pheno) - 1, pheno_l[i])
-                    dest.write(" ".join(v) + "\n")
-                    del v[int(col_pheno) - 1]  # avoid the aliasing issue
+            with open(h0_pheno, "w") as dest_h0:
+                with open(outfile, "w") as dest:
+                    for i, v in enumerate(lc_l):
+                        v.insert(-1, pheno_l[i])
+                        dest.write(" ".join(v) + "\n")
+                        dest_h0.write(" ".join(v[:-1]) + "\n")
+                        # del v[-2]  # avoid the aliasing issue
 
 
 class VcfToLrt:
@@ -347,6 +386,7 @@ class VcfToLrt:
         sig_lrt,
         outprefix,
     ):
+        num_perm = int(num_perm)
         self.u = util()  # object containing general method
         self.asr = AsremlMethods()  # object containing asreml method
         self.blp = Blupf90Methods()  # object contaning blupf90+ method
@@ -412,40 +452,22 @@ class VcfToLrt:
                 hzgys = g_list_homo_dict[1]
                 window_number += 1
                 win_min_point = statistics.median(list(positions.values()))
-                if tool == "asreml":
-                    window_process_list.append(
+                window_process_list.append(
+                    (
+                        f"{dataset}.{chromosome}.{window_number}",
+                        float(h0_logl),
+                        win_min_point,
+                        None if tool == "asreml" else grm,
+                    )
+                )
+                if num_perm > 0:
+                    window_perm_process_list.append(
                         (
                             f"{dataset}.{chromosome}.{window_number}",
-                            float(h0_logl),
                             win_min_point,
+                            None if tool == "asreml" else grm,
                         )
                     )
-                    if num_perm > 0:
-                        window_perm_process_list.append(
-                            (
-                                f"{dataset}.{chromosome}.{window_number}.perm",
-                                float(h0_logl),
-                                win_min_point,
-                            )
-                        )
-                else:
-                    window_process_list.append(
-                        (
-                            f"{dataset}.{chromosome}.{window_number}",
-                            float(h0_logl),
-                            win_min_point,
-                            grm,
-                        )
-                    )
-                    if num_perm > 0:
-                        window_perm_process_list.append(
-                            (
-                                f"{dataset}.{chromosome}.{window_number}.perm",
-                                float(h0_logl),
-                                win_min_point,
-                                grm,
-                            )
-                        )
                 g_job_list.append(
                     (
                         dataset,
@@ -459,7 +481,6 @@ class VcfToLrt:
                         param_file,
                         tool,
                         grm,
-                        num_perm,
                     )
                 )
                 del g_list_geno_dict[1]
@@ -475,14 +496,6 @@ class VcfToLrt:
                             for result in results:
                                 if result:
                                     dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
-                        if num_perm > 0:
-                            with Pool(processes=len(window_perm_process_list)) as pool:
-                                results = pool.map(self.blp.run_blupf90, window_perm_process_list, 1)
-                            with open(outprefix + "_perm_results.txt", "a") as dest:
-                                for result in results:
-                                    if result:
-                                        dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
-                            del window_perm_process_list[:]
                         del window_process_list[:]
                     del g_job_list[:]
         if len(g_job_list) > 0:
@@ -495,13 +508,6 @@ class VcfToLrt:
                 for result in results:
                     if result:
                         dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
-            if num_perm > 0:
-                with Pool(processes=1) as pool:
-                    results_perm = pool.map(self.asr.run_asreml, window_perm_process_list, 1)
-                with open(outprefix + "_perm_results.txt", "a") as dest:
-                    for result in results_perm:
-                        if result:
-                            dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
         else:
             if len(window_process_list) > 0:
                 with Pool(processes=len(window_process_list)) as pool:
@@ -510,6 +516,15 @@ class VcfToLrt:
                     for result in results:
                         if result:
                             dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+        if num_perm > 0:
+            print(window_process_list)
+            window_perm_process_list = random.sample(window_perm_process_list, int(num_perm))
+            if tool == "asreml":
+                with Pool(processes=1) as pool:
+                    results_perm = pool.map(self.asr.process_permutation_window, window_perm_process_list, 1)
+                with open(outprefix + "_perm_results.txt", "a") as dest:
+                    for result in results_perm:
+                        dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -526,7 +541,6 @@ class VcfToLrt:
             params_file,
             tool,
             grm,
-            permutation,
         ) = input_list
         prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
@@ -540,12 +554,12 @@ class VcfToLrt:
         pheno_col = self.u.prepare_dat_file(hap_path, pheno_file, prefix, tool)
 
         if tool == "asreml":
-            self.asr.prepare_params(params_file, max_d, grm, prefix, "h1", permutation)
+            self.asr.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for asreml
         else:
-            self.blp.prepare_params(params_file, max_d, grm, prefix, "h1", permutation)
+            self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for blupf90
 
-        if permutation:
-            self.u.generate_pseudo_pheno(prefix, pheno_col, 1)
+        # if permutation:
+        #    self.u.generate_pseudo_pheno(prefix, pheno_col, 1)
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
@@ -561,7 +575,7 @@ class VcfToLrt:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="python script to create hap, map, par and giv file of windows count in cLDLA"
+        description="python script to run cLDLA on a single chromosome"
     )
 
     parser.add_argument("-v", "--vcf", metavar="String", help="input phased vcf", required=True)
@@ -613,7 +627,7 @@ if __name__ == "__main__":
         "--num_perm",
         metavar="Int",
         help='carry out "n" permutation to access the level of significance (True or False)',
-        default=0,
+        default=100,
         required=False,
     )
     parser.add_argument(

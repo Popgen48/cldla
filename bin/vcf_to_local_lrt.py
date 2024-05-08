@@ -16,6 +16,11 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 asreml_path = distutils.spawn.find_executable("asreml")
 
+g_list_geno_dict = [{}]
+g_list_homo_dict = [{}]
+g_list_pos_dict = [{}]
+g_job_list = []
+
 
 class AsremlMethods:
 
@@ -229,22 +234,11 @@ class Blupf90Methods:
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, prefix, model)
-        self.prepare_datfile(
-            phe, prefix
-        )  # in case of h0, the dat file has the same prefix as the chromosome giv file (grm file)
-        command = f"mkdir {prefix} && mv {prefix}.params ./{prefix} && cp {prefix}.* {prefix} && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
+        self.prepare_datfile(phe, prefix)
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.log")
         return log_l
-
-    def run_blupf90(self, list_i):
-        prefix, h0_logl, mid_win_point, grm = list_i
-        win_ginv = prefix.rstrip(".perm") + ".giv"
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
-        subprocess.call([command], shell=True)
-        h1_logl = self.extract_logl(f"{prefix}.log")
-        if h0_logl != "na" and h1_logl != "na":
-            return prefix, mid_win_point, h0_logl - h1_logl
 
     def create_permutation_params(self, prefix, grm_prefix):
         with open(f"{prefix}.h0.perm.params", "w") as dest_h0:
@@ -275,14 +269,23 @@ class Blupf90Methods:
                         else:
                             dest_h1.write(f"{line}\n")
 
+    def run_blupf90(self, list_i):
+        prefix, h0_logl, mid_win_point, grm = list_i
+        win_ginv = prefix.rstrip(".perm") + ".giv"
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
+        subprocess.call([command], shell=True)
+        h1_logl = self.extract_logl(f"{prefix}.log")
+        if h0_logl != "na" and h1_logl != "na":
+            return prefix, mid_win_point, h0_logl - h1_logl
+
     def vce_permutation_h0(self, prefix, grm):
-        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params && cp blupf90.log ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
+        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params && cp blupf90.log ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
         subprocess.call([command], shell=True)
         h0_logl = self.extract_logl(f"{prefix}.h0.perm.log")
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
-        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && blupf90+ {prefix}.h1.perm.params && cp blupf90.log ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
+        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && blupf90+ {prefix}.h1.perm.params && cp blupf90.log ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.h1.perm.log")
         return h1_logl
@@ -297,7 +300,6 @@ class Blupf90Methods:
         h1_logl = self.vce_permutation_h1(prefix, grm)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
-
 
 class util:
 
@@ -421,184 +423,195 @@ class util:
 
 class VcfToLrt:
 
-    def __init__(
-        self, vcf_path, chromosome, window_size, num_cores, grm, pheno_file, param_file, tool, num_perm, outprefix
+    def read_vcf(
+        self,
+        vcf_path,
+        chromosome,
+        window_size,
+        num_cores,
+        grm,
+        pheno_file,
+        param_file,
+        tool,
+        num_perm,
+        outprefix,
     ):
-        self.vcf = pysam.VariantFile(vcf_path)  # read vcf file
-        self.chromosome = chromosome
-        self.window_size = int(window_size)  # window size in terms of number of SNPs
-        self.num_cores = int(num_cores)
-        self.grm = grm
-        self.pheno_file = pheno_file
-        self.param_file = param_file
-        self.tool = tool
-        self.num_perm = int(num_perm)
-        self.dataset = outprefix
-        self.outprefix = f"{outprefix}_{chromosome}"
-
+        num_perm = int(num_perm)
         self.u = util()  # object containing general method
         self.asr = AsremlMethods()  # object containing asreml method
         self.blp = Blupf90Methods()  # object contaning blupf90+ method
-        self.sample_list = make_sample_list(
+
+        window_size = int(window_size)  # window size in terms of number of SNPs
+        vcf = pysam.VariantFile(vcf_path)  # read vcf file
+        sample_list = make_sample_list(
             pheno_file
         )  # data file of phenotypes-->sample_index, sample_id, effect1 (x1), effect2 (x2),observation (y); y should always be the last column
-        self.window_number = 0
-        self.window_process_list = []  # list will collect the parameters to run asreml and blupf90
-        self.window_perm_process_list = (
+        dataset = outprefix
+        window_number = 0
+        window_process_list = []  # list will collect the parameters to run asreml and blupf90
+        window_perm_process_list = (
             []
         )  # list will collect the parameters to run asreml and blupf90 on permutated dataset
-        self.g_list_geno_dict = [{}]
-        self.g_list_homo_dict = [{}]
-        self.g_list_pos_dict = [{}]
-        self.g_job_list = []
-
-    def get_h0_lik(self):
         # following condition will calculate the log-likelihood value of the null hypothesis for real data
-        if self.tool == "asreml":
-            h0_logl = self.asr.run_h0(self.param_file, "na", self.grm, self.pheno_file, "h0")
+        if tool == "asreml":
+            h0_logl = self.asr.run_h0(param_file, "na", grm, pheno_file, "h0")
         else:
-            h0_logl = self.blp.run_h0(self.param_file, "na", self.grm, self.pheno_file, "h0")
-        return h0_logl
-
-    def populate_dict_with_vcf_record(self, record):
-        last_ele = -1
-        is_window_size = False if len(list(self.g_list_homo_dict[last_ele].keys())) < self.window_size else True
-        ac = self.u.get_ac(record, self.sample_list)  # calculate tuple of allele count for each position
-        homozygosity = self.u.get_homozygosity(ac)  # calculate homozygosity
-        if not record.id:
-            record.id = f"{record.chrom}_{record.pos}"
-        # the logic between line number 385 and 401 is this:
-        # why? creating overlapping window with sliding window should not read the same record twice
-        # example window size = 2
-        # g_list_homo_dict = [{"snp1":0.12,"snp2":0.15},{"snp1":0.12}]
-        # g_list_pos_dict = [{"snp1":1.12345,"snp2":1.67892},{"snp1":1.12345}]
-        # g_list_geno_dict = [{"sample1":[(0,1),(1,1)],"sample2":[(1,0),(0,0)]},{"sample1":[(0,1)],"sample2":[(1,0)]}]
-        # keep adding SNP's position, homozygosity and genotypes until it reaches the first record or reaches the window with size==2
-        while not is_window_size and not len(self.g_list_homo_dict) + last_ele == 0:
-            self.g_list_homo_dict[last_ele][record.id] = homozygosity
-            self.g_list_pos_dict[last_ele][record.id] = record.pos / 1e6
-            # Iterate through samples
-            for sample in self.sample_list:
-                sample_values = record.samples[sample]["GT"]
-                if sample not in self.g_list_geno_dict[last_ele]:
-                    self.g_list_geno_dict[last_ele][sample] = []
-                self.g_list_geno_dict[last_ele][sample].append(sample_values)
-
-            last_ele += -1
-
-            if len(self.g_list_homo_dict) > 1:
-                is_window_size = False if len(list(self.g_list_homo_dict[last_ele].keys())) < self.window_size else True
-            else:
-                is_window_size = True
-        self.g_list_homo_dict.append({record.id: homozygosity})
-        self.g_list_pos_dict.append({record.id: record.pos / 1e6})
-        self.g_list_geno_dict.append({})
-        for sample in self.sample_list:
-            sample_values = record.samples[sample]["GT"]
-            self.g_list_geno_dict[-1][sample] = [sample_values]
-
-    def read_vcf(self):
-        h0_logl = self.get_h0_lik()
+            h0_logl = self.blp.run_h0(param_file, "na", grm, pheno_file, "h0")
         # Iterate through VCF records
-        for i, record in enumerate(self.vcf):
-            self.populate_dict_with_vcf_record(record)
-            # it is always the first element that should reach the user-defined window size, see explanation from line 470 -- 476
-            if len(self.g_list_homo_dict[1]) == self.window_size:
-                sample_genotypes = self.g_list_geno_dict[1]
-                positions = self.g_list_pos_dict[1]
-                hzgys = self.g_list_homo_dict[1]
-                self.window_number += 1
+        for i, record in enumerate(vcf):
+            last_ele = -1
+            is_window_size = False if len(list(g_list_homo_dict[last_ele].keys())) < window_size else True
+            ac = self.u.get_ac(record, sample_list)  # calculate tuple of allele count for each position
+            homozygosity = self.u.get_homozygosity(ac)  # calculate homozygosity
+            if not record.id:
+                record.id = f"{record.chrom}_{record.pos}"
+            # the logic between line number 385 and 401 is this:
+            # why? creating overlapping window with sliding window should not read the same record twice
+            # example window size = 2
+            # g_list_homo_dict = [{"snp1":0.12,"snp2":0.15},{"snp1":0.12}]
+            # g_list_pos_dict = [{"snp1":1.12345,"snp2":1.67892},{"snp1":1.12345}]
+            # g_list_geno_dict = [{"sample1":[(0,1),(1,1)],"sample2":[(1,0),(0,0)]},{"sample1":[(0,1)],"sample2":[(1,0)]}]
+            # keep adding SNP's position, homozygosity and genotypes until it reaches the first record or reaches the window with size==2
+            while not is_window_size and not len(g_list_homo_dict) + last_ele == 0:
+                g_list_homo_dict[last_ele][record.id] = homozygosity
+                g_list_pos_dict[last_ele][record.id] = record.pos / 1e6
+
+                # Iterate through samples
+                for sample in sample_list:
+                    sample_values = record.samples[sample]["GT"]
+                    if sample not in g_list_geno_dict[last_ele]:
+                        g_list_geno_dict[last_ele][sample] = []
+                    g_list_geno_dict[last_ele][sample].append(sample_values)
+
+                last_ele += -1
+
+                if len(g_list_homo_dict) > 1:
+                    is_window_size = False if len(list(g_list_homo_dict[last_ele].keys())) < window_size else True
+                else:
+                    is_window_size = True
+            g_list_homo_dict.append({record.id: homozygosity})
+            g_list_pos_dict.append({record.id: record.pos / 1e6})
+            g_list_geno_dict.append({})
+            for sample in sample_list:
+                sample_values = record.samples[sample]["GT"]
+                g_list_geno_dict[-1][sample] = [sample_values]
+            # it is always the first element that should reach the user-defined window size, see explanation from line 378--384
+            if len(g_list_homo_dict[1]) == window_size:
+                sample_genotypes = g_list_geno_dict[1]
+                positions = g_list_pos_dict[1]
+                hzgys = g_list_homo_dict[1]
+                window_number += 1
                 win_min_point = statistics.median(list(positions.values()))
-                self.window_process_list.append(
+                window_process_list.append(
                     (
-                        f"{self.dataset}.{self.chromosome}.{self.window_number}",
+                        f"{dataset}.{chromosome}.{window_number}",
                         float(h0_logl),
                         win_min_point,
-                        None if self.tool == "asreml" else self.grm,
+                        None if tool == "asreml" else grm,
                     )
                 )
-                if self.num_perm > 0:
-                    self.window_perm_process_list.append(
+                if num_perm > 0:
+                    window_perm_process_list.append(
                         (
-                            f"{self.dataset}.{self.chromosome}.{self.window_number}",
+                            f"{dataset}.{chromosome}.{window_number}",
                             win_min_point,
-                            (
-                                None if self.tool == "asreml" else self.grm
-                            ),  # also have to copy grm file in a separate folder in case of blupf90
+                            None if tool == "asreml" else grm,
                         )
                     )
-                self.g_job_list.append(
+                g_job_list.append(
                     (
+                        dataset,
+                        chromosome,
                         sample_genotypes,
                         positions,
                         hzgys,
+                        window_number,
+                        window_size,
+                        pheno_file,
+                        param_file,
+                        tool,
+                        grm,
                     )
                 )
-                del self.g_list_geno_dict[1]
-                del self.g_list_pos_dict[1]
-                del self.g_list_homo_dict[1]
-                if len(self.g_job_list) == int(self.num_cores):
-                    with Pool(processes=len(self.g_job_list)) as pool:
-                        pool.map(self.create_ginverse, self.g_job_list, 1)
-                    if self.tool != "asreml":
-                        with Pool(processes=len(self.window_process_list)) as pool:
-                            results = pool.map(self.blp.run_blupf90, self.window_process_list, 1)
-                        with open(self.outprefix + "_results.txt", "a") as dest:
+                del g_list_geno_dict[1]
+                del g_list_pos_dict[1]
+                del g_list_homo_dict[1]
+                if len(g_job_list) == int(num_cores):
+                    with Pool(processes=len(g_job_list)) as pool:
+                        pool.map(self.create_ginverse, g_job_list, 1)
+                    if tool != "asreml":
+                        with Pool(processes=len(window_process_list)) as pool:
+                            results = pool.map(self.blp.run_blupf90, window_process_list, 1)
+                        with open(outprefix + "_results.txt", "a") as dest:
                             for result in results:
                                 if result:
-                                    dest.write(f"{self.chromosome} {result[0]} {result[1]} {result[2]}\n")
-                        del self.window_process_list[:]
-                    del self.g_job_list[:]
-        self.process_last_windows()
-        self.permutate_n_windows()
-        self.vcf.close()
-
-    def process_last_windows(self):
-        function_dict = {"blupf90": self.blp.run_blupf90, "asreml": self.asr.run_asreml}
-        cpu_dict = {"blupf90": self.num_cores, "asreml": 1}
-        if len(self.g_job_list) > 0:
-            with Pool(processes=len(self.g_job_list)) as pool:
-                pool.map(self.create_ginverse, self.g_job_list, 1)
-            with Pool(processes=cpu_dict[self.tool]) as pool:
-                results = pool.map(function_dict[self.tool], self.window_process_list, 1)
-            with open(self.outprefix + "_results.txt", "a") as dest:
-                for result in results:
-                    if result:
-                        dest.write(f"{self.chromosome} {result[0]} {result[1]} {result[2]}\n")
-
-    def permutate_n_windows(self):
-        if self.num_perm > 0:
-            window_perm_process_list = random.sample(self.window_perm_process_list, int(self.num_perm))
-            if self.tool == "asreml":
+                                    dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+                        del window_process_list[:]
+                    del g_job_list[:]
+        if len(g_job_list) > 0:
+            with Pool(processes=len(g_job_list)) as pool:
+                pool.map(self.create_ginverse, g_job_list, 1)
+            if tool == "asreml":
+                with Pool(processes=1) as pool:
+                    results = pool.map(self.asr.run_asreml, window_process_list, 1)
+                with open(outprefix + "_results.txt", "w") as dest:
+                    for result in results:
+                        if result:
+                            dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+            else:
+                if len(window_process_list) > 0:
+                    with Pool(processes=len(window_process_list)) as pool:
+                        results = pool.map(self.blp.run_blupf90, window_process_list, 1)
+                    with open(outprefix + "_results.txt", "a") as dest:
+                        for result in results:
+                            if result:
+                                dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+        if num_perm > 0:
+            window_perm_process_list = random.sample(window_perm_process_list, int(num_perm))
+            if tool == "asreml":
                 with Pool(processes=1) as pool:
                     results_perm = pool.map(self.asr.process_permutation_window, window_perm_process_list, 1)
             else:
-                with Pool(processes=int(self.num_cores)) as pool:
+                with Pool(processes=int(num_cores)) as pool:
                     results_perm = pool.map(self.blp.process_permutation_window, window_perm_process_list, 1)
-            with open(self.outprefix + "_perm_results.txt", "a") as dest:
+            with open(outprefix + "_perm_results.txt", "a") as dest:
                 for result in results_perm:
-                    dest.write(f"{self.chromosome} {result[0]} {result[1]} {result[2]}\n")
+                    dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+        vcf.close()
 
     def create_ginverse(self, input_list):
 
-        (sample_genotypes, positions, hzgys) = input_list
-        prefix = f"{self.dataset}.{self.chromosome}.{self.window_number}"
+        (
+            dataset,
+            chromosome,
+            sample_genotypes,
+            positions,
+            hzgys,
+            window_number,
+            window_size,
+            pheno_file,
+            params_file,
+            tool,
+            grm,
+        ) = input_list
+        prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
         map_path = f"{prefix}.Map"
         par_path = f"{prefix}.par"
 
         n_samples, max_d = self.u.get_HAP(hap_path, sample_genotypes)
         self.u.get_MAP(map_path, positions, hzgys)
-        self.u.get_PAR(par_path, self.window_size, self.window_number, n_samples)
+        self.u.get_PAR(par_path, window_size, window_number, n_samples)
 
-        pheno_col = self.u.prepare_dat_file(hap_path, self.pheno_file, prefix, self.tool)
+        pheno_col = self.u.prepare_dat_file(hap_path, pheno_file, prefix, tool)
 
-        if self.tool == "asreml":
-            self.asr.prepare_params(self.param_file, max_d, self.grm, prefix, "h1")  # prepare parameter file for asreml
+        if tool == "asreml":
+            self.asr.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for asreml
         else:
-            self.blp.prepare_params(
-                self.param_file, max_d, self.grm, prefix, "h1"
-            )  # prepare parameter file for blupf90
+            self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for blupf90
+
+        # if permutation:
+        #    self.u.generate_pseudo_pheno(prefix, pheno_col, 1)
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
@@ -609,11 +622,13 @@ class VcfToLrt:
 
         subprocess.call([command], shell=True)
 
-        print(f"Generated .dat and .giv for {self.window_number}")
+        print(f"Generated .dat and .giv for {window_number}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="python script to run cLDLA on a single chromosome")
+    parser = argparse.ArgumentParser(
+        description="python script to run cLDLA on a single chromosome"
+    )
 
     parser.add_argument("-v", "--vcf", metavar="String", help="input phased vcf", required=True)
     parser.add_argument(
@@ -674,7 +689,8 @@ if __name__ == "__main__":
         parser.print_help(sys.stderr)
         sys.exit(1)
     else:
-        calc_lrt = VcfToLrt(
+        calc_lrt = VcfToLrt()
+        calc_lrt.read_vcf(
             args.vcf,
             args.chr,
             args.window_size,
@@ -686,4 +702,3 @@ if __name__ == "__main__":
             args.num_perm,
             args.outprefix,
         )
-        calc_lrt.read_vcf()

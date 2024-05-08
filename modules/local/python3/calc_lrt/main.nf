@@ -13,7 +13,8 @@ process PYTHON3_CALC_LRT{
         tuple val(meta), path(chrom_giv), path(pheno_file), path(par_file), path(vcf_file)
 
     output:
-        tuple val(meta), path("*_results.txt"), emit: txt
+        tuple val(meta), path("{chrom}_{outprefix}_results.txt"), emit: real_txt
+        tuple val(meta), path("{chrom}_{outprefix}_perm_results.txt"), emit: perm_txt
 
     when:
         task.ext.when == null || task.ext.when
@@ -27,7 +28,7 @@ process PYTHON3_CALC_LRT{
         n_perm = params.n_perm
 
         """
-    python3 ${baseDir}/bin/vcf_to_local_lrt.py -v ${vcf_file} -r ${chrom} -w ${window_size} -c ${task.cpus} -g ${chrom_giv} -p ${pheno_file} -a ${par_file} -t ${tool} -o ${outprefix} -n ${n_perm}
+    python3 ${baseDir}/bin/vcf_to_local_lrt.py -v ${vcf_file} -r ${chrom} -w ${window_size} -c ${task.cpus} -g ${chrom_giv} -p ${pheno_file} -a ${par_file} -t ${tool} -o ${chrom}_${outprefix} -n ${n_perm}
 
 
         """ 

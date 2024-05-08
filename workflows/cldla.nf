@@ -223,6 +223,9 @@ workflow CLDLA {
     PYTHON3_CALC_LRT(
         ch_lrt
     )
+
+    PYTHON3_CALC_LRT.out.txt.view()
+
     }
 }
 

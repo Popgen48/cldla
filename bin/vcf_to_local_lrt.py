@@ -1,5 +1,6 @@
 import sys
 import os
+import os.path
 import distutils
 import re
 import pysam
@@ -25,7 +26,7 @@ g_job_list = []
 class AsremlMethods:
 
     def __init__(self):
-        self.rm_file_pattern = ".{ask,aov,msv,res,rsv,sln,tmp,tsv,veo,vvp,yht}"
+        self.rm_file_pattern = ".{ask,aov,msv,res,rsv,tmp,tsv,veo,vvp,yht}"
 
     def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [f"{prefix}.as"] if model == "h1" else [grm.rstrip(".giv") + ".as"]
@@ -301,6 +302,7 @@ class Blupf90Methods:
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
+
 class util:
 
     def prepare_dat_file(self, hap_path, pheno_file, prefix, tool):
@@ -434,6 +436,8 @@ class VcfToLrt:
         param_file,
         tool,
         num_perm,
+        store,
+        output_dir,
         outprefix,
     ):
         num_perm = int(num_perm)
@@ -452,11 +456,19 @@ class VcfToLrt:
         window_perm_process_list = (
             []
         )  # list will collect the parameters to run asreml and blupf90 on permutated dataset
+        store_list = []  # store the csv strings for re-analysis
         # following condition will calculate the log-likelihood value of the null hypothesis for real data
         if tool == "asreml":
             h0_logl = self.asr.run_h0(param_file, "na", grm, pheno_file, "h0")
         else:
             h0_logl = self.blp.run_h0(param_file, "na", grm, pheno_file, "h0")
+        # copy ginv of grm file to the output directory location and write the output file at the same location
+        if store:
+            # shutil.copy(f"{grm}", f"{output_dir}/")
+            prefix = grm.rstrip(".giv")
+            store_list.append(
+                f"{prefix},{output_dir}/{grm},{output_dir}/{prefix}.dat,{output_dir}/{prefix}.params"
+            )  # write the window record for H0 hypothesis
         # Iterate through VCF records
         for i, record in enumerate(vcf):
             last_ele = -1
@@ -531,6 +543,8 @@ class VcfToLrt:
                         param_file,
                         tool,
                         grm,
+                        # store,
+                        # output_dir,
                     )
                 )
                 del g_list_geno_dict[1]
@@ -542,10 +556,13 @@ class VcfToLrt:
                     if tool != "asreml":
                         with Pool(processes=len(window_process_list)) as pool:
                             results = pool.map(self.blp.run_blupf90, window_process_list, 1)
-                        with open(outprefix + "_results.txt", "a") as dest:
+                        with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
                             for result in results:
                                 if result:
                                     dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+                        for i, v in enumerate(g_job_list):
+                            l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
+                            store_list.append(l_prefix)
                         del window_process_list[:]
                     del g_job_list[:]
         if len(g_job_list) > 0:
@@ -554,18 +571,21 @@ class VcfToLrt:
             if tool == "asreml":
                 with Pool(processes=1) as pool:
                     results = pool.map(self.asr.run_asreml, window_process_list, 1)
-                with open(outprefix + "_results.txt", "w") as dest:
+                with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
                     for result in results:
                         if result:
                             dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
             else:
-                if len(window_process_list) > 0:
-                    with Pool(processes=len(window_process_list)) as pool:
-                        results = pool.map(self.blp.run_blupf90, window_process_list, 1)
-                    with open(outprefix + "_results.txt", "a") as dest:
-                        for result in results:
-                            if result:
-                                dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+                # if len(window_process_list) > 0:
+                with Pool(processes=len(window_process_list)) as pool:
+                    results = pool.map(self.blp.run_blupf90, window_process_list, 1)
+                with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
+                    for result in results:
+                        if result:
+                            dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+            for i, v in enumerate(g_job_list):
+                l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
+                store_list.append(l_prefix)
         if num_perm > 0:
             window_perm_process_list = random.sample(window_perm_process_list, int(num_perm))
             if tool == "asreml":
@@ -574,9 +594,21 @@ class VcfToLrt:
             else:
                 with Pool(processes=int(num_cores)) as pool:
                     results_perm = pool.map(self.blp.process_permutation_window, window_perm_process_list, 1)
-            with open(outprefix + "_perm_results.txt", "a") as dest:
+            with open(f"{outprefix}_{chromosome}_perm_results.txt", "a") as dest:
                 for result in results_perm:
                     dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+        if store:
+            with open(f"{outprefix}_{chromosome}_window_info.csv", "w") as dest:
+                for prefix in store_list:
+                    dest.write(
+                        f"{l_prefix},{output_dir}/{l_prefix}.giv,{output_dir}/{l_prefix}.dat,{output_dir}/{l_prefix}.params\n"
+                    )
+        else:
+            for prefix in store_list:
+                rm_command = f"rm {prefix}.{{dat,params,giv}}"
+                subprocess.call([rm_command], shell=True)
+            rm_command = f"rm *.perm.*"
+            subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -593,6 +625,8 @@ class VcfToLrt:
             params_file,
             tool,
             grm,
+            # store,
+            # output_dir,
         ) = input_list
         prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
@@ -622,13 +656,16 @@ class VcfToLrt:
 
         subprocess.call([command], shell=True)
 
+        # if store:
+        #    shutil.copy(f"{prefix}.giv", f"{output_dir}/")
+        #    shutil.copy(f"{prefix}.params", f"{output_dir}/")
+        #    shutil.copy(f"{prefix}.dat", f"{output_dir}/")
+
         print(f"Generated .dat and .giv for {window_number}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="python script to run cLDLA on a single chromosome"
-    )
+    parser = argparse.ArgumentParser(description="python script to run cLDLA on a single chromosome")
 
     parser.add_argument("-v", "--vcf", metavar="String", help="input phased vcf", required=True)
     parser.add_argument(
@@ -673,7 +710,7 @@ if __name__ == "__main__":
         help="tools for variance component estimation --> asreml or blupf90 (default: %(default)s)",
     )
 
-    parser.add_argument("-o", "--outprefix", help="output prefix", required=True)
+    parser.add_argument("-o", "--outprefix", help="output prefix", default="cldla", required=False)
     parser.add_argument(
         "-n",
         "--num_perm",
@@ -682,11 +719,21 @@ if __name__ == "__main__":
         default=100,
         required=False,
     )
+    parser.add_argument(
+        "-s",
+        "--store",
+        help="whether or not to store ginv, grm and phenotype file for each window",
+        action="store_true",
+    )
+    parser.add_argument("-O", "--output_dir", help="path to the output directory", required=False)
 
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
+        sys.exit(1)
+    elif args.store and not args.output_dir:
+        print("when setting the tag --store the output_dir must be defined")
         sys.exit(1)
     else:
         calc_lrt = VcfToLrt()
@@ -700,5 +747,7 @@ if __name__ == "__main__":
             args.params,
             args.tool,
             args.num_perm,
+            args.store,
+            args.output_dir,
             args.outprefix,
         )

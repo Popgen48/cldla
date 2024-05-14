@@ -224,7 +224,7 @@ workflow CLDLA {
         ch_lrt
     )
 
-    PYTHON3_CALC_LRT.out.txt.view()
+    PYTHON3_CALC_LRT.out.real_txt.view()
 
     }
 }

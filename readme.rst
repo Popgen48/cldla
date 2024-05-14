@@ -15,11 +15,11 @@ popgen-cldla is a fully automated workflow to identify QTLs using combined linka
 
 Input files
 -------------
-| 1). List of phased or unphased vcf files in a csv format
-| 2). Phenotype file 
-| 3). A template file of parameters with the definition of mixed and fixed effects.
+| 1. List of phased or unphased vcf files in a csv format
+| 2. Phenotype file 
+| 3. A template file of parameters with the definition of mixed and fixed effects.
 
 ..  code-block:: Bash
-
-10,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz.csi
-11,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz.csi
+    
+    10,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz.csi
+    11,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz.csi

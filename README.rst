@@ -21,9 +21,9 @@ Input files
     
     10,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr10.TxT.vcf.gz.csi
     11,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz,/data/testing/TailMLS04/OUT_VCF_BEAGLE4_ALL_OARAutoSom1_Chr11.TxT.vcf.gz.csi
-   .
-   .
-   .
+    .
+    .
+    .
 
 | 2. Phenotype file 
 
@@ -41,24 +41,26 @@ Input files
 
 | Parameter template file of *asreml*
 ..  code-block:: Bash
-	This line is a headline: TailMLS04 design include all fix effects and phenotype
-	indi 362 !I
-	TierLID 362 !A
-	Sex 1
-	Age 1
-	BodyW 1
-	WitherH 1
-	TailL 1
-	!I
-	!LDET
-	!LDET
-	!AISING !NODISPLAY !MAXIT 99
-	TailL ~ mu Sex Age BodyW WitherH !r giv(iDip,2) !r giv(indi,1)
+
+    This line is a headline: TailMLS04 design include all fix effects and phenotype
+    indi 362 !I
+    TierLID 362 !A
+    Sex 1
+    Age 1
+    BodyW 1
+    WitherH 1
+    TailL 1
+    !I
+    !LDET
+    !LDET
+    !AISING !NODISPLAY !MAXIT 99
+    TailL ~ mu Sex Age BodyW WitherH !r giv(iDip,2) !r giv(indi,1)
 
 | Parameter template file of *blupf90+*
 ..  code-block:: Bash
-	NUMBER_OF_TRAITS
-	1
+
+    NUMBER_OF_TRAITS
+    1
 	NUMBER_OF_EFFECTS
 	5
 	OBSERVATION(S)

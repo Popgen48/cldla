@@ -77,6 +77,7 @@ Input files
 	2.0
 
 | **things to consider in the parameter template file**
-| 1. Note that in the current version, the MLMs are tested with two mixed effects : additive polygenic effect and additive QTL effects. In case of asreml, these two mixed effects must be included in the parameter file and must be defined exactly with the same keywords (iDip and indi) as shown in the parameter file. 
-| 2. In case of blupf90+, any additional option can be included after the last line (showing the Random residual values). 
-
+| 1. If you have not used any of the two programs (asreml and blupf90+) implemented for variance component estimation before, please Refer to its respective documentation: `asreml documentation <https://asreml.kb.vsni.co.uk/wp-content/uploads/sites/3/ASReml-R-Reference-Manual-4.2.pdf>`_ or `blupf90+ documentation <http://nce.ads.uga.edu/html/projects/programs/docs/blupf90_all8.pdf>`_. 
+| 2. Note that in the current version, the MLMs are tested with two mixed effects : additive polygenic effect and additive QTL effects.
+| 3. In case of asreml, these two mixed effects must be included in the parameter file and must be defined exactly with the same keywords (iDip and indi) as shown in the parameter file. 
+| 4. In case of blupf90+ parameter template, only define the columns of the fixed effects. Further, any additional options can be included after the last line (showing the Random residual values). 

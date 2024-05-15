@@ -81,3 +81,15 @@ Input files
 | 2. Note that in the current version, the MLMs are tested with two mixed effects : additive polygenic effect and additive QTL effects.
 | 3. In case of asreml, these two mixed effects must be included in the parameter file and must be defined exactly with the same keywords (iDip and indi) as shown in the parameter file. 
 | 4. In case of blupf90+ parameter template, only define the columns of the fixed effects. Further, any additional options can be included after the last line (showing the Random residual values). 
+
+Example command to run the workflow
+-----------------------------------
+..  code-block:: Bash
+
+	nextflow run popgen-cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe --par_file TailMLS04.template.b.config -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
+
+**Note that the workflow currently only supports the singularity container**
+
+Description of the parameters
+------------------------------
+

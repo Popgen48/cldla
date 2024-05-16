@@ -38,6 +38,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { CHECK_INPUT } from '../subworkflows/local/check_input'
+include { PHASE_GENOTYPES } from '../subworkflows/local/phase_genotypes'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,11 +51,11 @@ include { CHECK_INPUT } from '../subworkflows/local/check_input'
 //
 include { PYTHON3_FILTER_VCF } from '../modules/local/python3/filter_vcf/main'
 include { PYTHON3_VCFTOLGEN } from '../modules/local/python3/vcftolgen/main'
+include { PYTHON3_CREATE_GCTA_INPUT } from '../modules/local/python3/create_gcta_input/main'
 include { CALC_UAR } from '../modules/local/uarprocess/calc_uar'
 include { UAR_INVERSE } from '../modules/local/uarprocess/uar_inverse'
 include { MAKE_GRM } from '../modules/local/gcta/make_grm'
 include { REML_GRM } from '../modules/local/gcta/reml_grm'
-include { CREATE_INPUTS } from '../modules/local/gcta/create_inputs'
 include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randompheno_create'
 include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
 include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
@@ -84,7 +85,8 @@ workflow CLDLA {
         ch_input
     )
 
-    if( params.include_chrom == "none"){
+    if( !params.include_chrom ){
+
 
         chrom = CHECK_INPUT.out.meta_vcf_idx.map{meta, vcf, idx -> meta.id} // chrom separated out so that UAR matrix can be calculated 
 
@@ -102,12 +104,21 @@ workflow CLDLA {
     pheno_f = Channel.fromPath(params.pheno_file) //read phenotype file
 
 
+    if( params.phase_genotypes == true ){
+        PHASE_GENOTYPES(
+        CHECK_INPUT.out.meta_vcf_idx
+        )
+        n1_meta_vcf_idx = PHASE_GENOTYPES.out.n1_meta_vcf_idx
+    }
+    else{
+            n1_meta_vcf_idx = CHECK_INPUT.out.meta_vcf_idx
+        }
     //
     // MODULE: filter vcf based on maf and sample inclusion-exclusion
     //
 
     PYTHON3_FILTER_VCF(
-        CHECK_INPUT.out.meta_vcf_idx.combine(pheno_f)
+        n1_meta_vcf_idx.combine(pheno_f)
     )
 
     //PYTHON3_FILTER_VCF.out.gzvcf.view()
@@ -144,38 +155,34 @@ workflow CLDLA {
             PLINK2_VCF.out.fam,
             PLINK2_VCF.out.bim
         )
-        
-    
 
-        qcovar_file = Channel.fromPath(params.qcovar)
-        
-        covar_file = Channel.fromPath(params.covar)
-
-        CREATE_INPUTS(
-            pheno_f,
-            qcovar_file.map{q->q=="none"?[]:q},
-            covar_file.map{c->c=="none"?[]:c}
+        PYTHON3_CREATE_GCTA_INPUT(
+            pheno_f
         )
 
         gi_gnb_gb = MAKE_GRM.out.gcta_grm_id.combine(MAKE_GRM.out.gcta_grm_n_bin).combine(MAKE_GRM.out.gcta_grm_bin)
 
-        gi_gnb_gb_p_q_c = gi_gnb_gb.combine(CREATE_INPUTS.out.gcta_phe).combine(CREATE_INPUTS.out.gcta_qcovar).combine(CREATE_INPUTS.out.gcta_covar)
+        gi_gnb_gb_p = gi_gnb_gb.combine(PYTHON3_CREATE_GCTA_INPUT.out.gcta_phe)
+
+        gi_gnb_gb_p_q_c = gi_gnb_gb_p.combine(PYTHON3_CREATE_GCTA_INPUT.out.gcta_qcovar.ifEmpty(null)).combine(PYTHON3_CREATE_GCTA_INPUT.out.gcta_covar.ifEmpty(null))
         
 
         REML_GRM(
-            gi_gnb_gb_p_q_c.map{gi,gnb,gb,p,q,c->tuple(gi,gnb,gb,p,q=="none"?[]:q,c=="none"?[]:c)}
+            gi_gnb_gb_p_q_c.map{gi,gnb,gb,p,q,c->tuple(gi,gnb,gb,p,q==null?[]:q,c==null?[]:c)}
         )
 
         H2_RANDOMPHENO_CREATE(
-            CREATE_INPUTS.out.gcta_phe
+            PYTHON3_CREATE_GCTA_INPUT.out.gcta_phe
         )
         
         ps = H2_RANDOMPHENO_CREATE.out.pheno_he.flatten()
 
-        gi_gnb_gb_ps_q_c = gi_gnb_gb.combine(ps).combine(CREATE_INPUTS.out.gcta_qcovar).combine(CREATE_INPUTS.out.gcta_covar)
+        gi_gnb_gb_ps = gi_gnb_gb.combine(ps)
+
+        gi_gnb_gb_ps_q_c = gi_gnb_gb_ps.combine(PYTHON3_CREATE_GCTA_INPUT.out.gcta_qcovar.ifEmpty(null)).combine(PYTHON3_CREATE_GCTA_INPUT.out.gcta_covar.ifEmpty(null))
 
         REML_GRM_SIM(
-            gi_gnb_gb_ps_q_c.map{gi,gnb,gb,ps,q,c->tuple(gi,gnb,gb,ps,q=="none"?[]:q,c=="none"?[]:c)}
+            gi_gnb_gb_ps_q_c.map{gi,gnb,gb,ps,q,c->tuple(gi,gnb,gb,ps,q==null?[]:q,c==null?[]:c)}
         )
 
         PLOT_H2_HISTOGRAM(
@@ -224,7 +231,6 @@ workflow CLDLA {
         ch_lrt
     )
 
-    PYTHON3_CALC_LRT.out.real_txt.view()
 
     }
 }

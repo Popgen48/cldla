@@ -35,11 +35,6 @@
                     "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
                     "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
                 },
-                "include_samples": {
-                    "type": "string",
-                    "description": "samples to be included in vcf files",
-                    "fa_icon": "far fa-file-alt"
-                },
                 "maf": {
                     "type": "number",
                     "description": "minor allele frequency threshold; SNPs with MAF less than this threshold will filtered out",
@@ -59,18 +54,6 @@
                     "type": "string",
                     "description": "path to the phenotypes file as recognized by echidna"
                 },
-                "n_random_pheno": {
-                    "type": "number",
-                    "description": "number of randomized pseudo-phenotypes to be generated per chromosome for permutation test"
-                },
-                "n_random_window": {
-                    "type": "number",
-                    "description": "number of windows per chromosome to be selected randomly for permutation test"
-                },
-                "permutation_test": {
-                    "type": "boolean",
-                    "description": "whether or not to perform permutation test to determine empirical cut-off for cLDLA"
-                },
                 "p_value": {
                     "type": "number",
                     "description": "p-value cutoff based on permutation test"
@@ -78,11 +61,6 @@
                 "include_chrom": {
                     "type": "string",
                     "description": "file containing ids of chromosome on which cLDLA will be carried out"
-                },
-                "run_window_serial": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "whether to run wombat serially on each window"
                 },
                 "num_autosomes": {
                     "type": "number",
@@ -107,14 +85,30 @@
                     "type": "string",
                     "description": "parameter file of the tool"
                 },
-                "n_var_est_process": {
-                    "type": "integer",
-                    "default": 1,
-                    "description": "number of chromosomes to be run in parallel for variance component estimation"
-                },
                 "n_perm": {
                     "type": "integer",
-                    "default": 100
+                    "default": 100,
+                    "description": "number of permutation test to be carried out to determine the significant threshold for CLDLA or H2 estimation"
+                },
+                "phase_genotypes": {
+                    "type": "boolean",
+                    "description": "whether or not to phase the genotypes"
+                },
+                "phasing_panel": {
+                    "type": "string",
+                    "pattern": "^\\S+\\.csv$",
+                    "format": "file-path",
+                    "description": "csv file containing information about path to the vcf files to be used for imputation"
+                },
+                "phasing_map": {
+                    "type": "string",
+                    "description": "csv file containing information about path to the recombination map files"
+                },
+                "phasing_tool": {
+                    "type": "string",
+                    "default": "beagle5",
+                    "description": "tool to be used for phasing: beagle5 or shapeit5",
+                    "enum": ["beagle5", "shapeit5"]
                 }
             }
         },

@@ -19,7 +19,6 @@ process PYTHON3_CALC_LRT{
         chrom = meta.id
         outprefix = params.output_prefix
         window_size = params.window_size
-        num_process = params.n_var_est_process
         tool = params.tool
         n_perm = params.n_perm
 

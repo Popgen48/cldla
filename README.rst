@@ -85,7 +85,7 @@ Input files
 | 4. In case of blupf90+ parameter template, only define the columns of the fixed effects. Further, any additional options can be included after the last line (showing the Random residual values). 
 
 Example commands to run the workflow
------------------------------------
+--------------------------------------
 
 **To identify QTLs using CLDLA approach**
 

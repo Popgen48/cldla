@@ -13,6 +13,8 @@ popgen-cldla is a fully automated workflow to identify QTLs using combined linka
 | 6. Variance component estimation 
 | 7. Plotting the results in the form of manhattan plot
 
+**Note that the workflow currently only supports the singularity container**
+
 Input files
 -------------
 | 1. List of phased or unphased vcf files in a csv format
@@ -82,13 +84,22 @@ Input files
 | 3. In case of asreml, these two mixed effects must be included in the parameter file and must be defined exactly with the same keywords (iDip and indi) as shown in the parameter file. 
 | 4. In case of blupf90+ parameter template, only define the columns of the fixed effects. Further, any additional options can be included after the last line (showing the Random residual values). 
 
-Example command to run the workflow
+Example commands to run the workflow
 -----------------------------------
+
+**To identify QTLs using CLDLA approach**
+
 ..  code-block:: Bash
 
 	nextflow run popgen-cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe --par_file TailMLS04.template.b.config -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
 
-**Note that the workflow currently only supports the singularity container**
+**To estimate heritability using the approach as implemented in GCTA**
+
+..  code-block:: Bash
+
+   nextflow run popgen-cldla/ --input nextflow_testing/TailMLS04/chrom_vcf_idx.csv --maf 0.05 --pheno_file nextflow_testing/TailMLS04/TailMLS04.template.phe -qs 10 --outdir testing_h2_TailMLS04 -resume -profile singularity --output_prefix TailMLS04_h2 --estimate_h2
+
+*Note that estimation of heritability using GCTA requires that the regressors be separated into two files: quantitative variables and qualitative variables. Therefore, in the phenotype file, any column with the float values (identified using the presence of dot,".") are automatically classified as quantitative and the column without float values are classified as qualitative. Further, the workflow to estimate h2, will produce the error if there is any column with mixtures of float and integer values.* 
 
 Description of the parameters
 ------------------------------

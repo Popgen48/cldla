@@ -93,3 +93,27 @@ Example command to run the workflow
 Description of the parameters
 ------------------------------
 
+..  code-block:: Bash
+	--input                       [string]  Path to comma-separated file containing information about the samples in the experiment.
+	--outdir                      [string]  The output directory where the results will be saved. You have to use absolute paths to storage on Cloud 
+                                          infrastructure. 
+	--email                       [string]  Email address for completion summary.
+	--maf                         [number]  minor allele frequency threshold; SNPs with MAF less than this threshold will filtered out
+	--window_size                 [number]  Window size to carry out cLDLA analysis [default: 40]
+	--output_prefix               [string]  output prefix should not contain the dot in it [default: cldla_run1]
+	--pheno_file                  [string]  path to the phenotypes file as recognized by echidna
+	--p_value                     [number]  p-value cutoff based on permutation test
+	--include_chrom               [string]  file containing ids of chromosome on which cLDLA will be carried out
+	--num_autosomes               [number]  total number of autosomes in the dataset
+	--estimate_h2                 [boolean] whether to estimate heritability using gcta tool
+	--lrt_threhold                [number]  lrt values above which the values are significant [default: 18]
+	--tool                        [string]  tool to estimate variance components [default: blupf90]
+	--par_file                    [string]  parameter file of the tool
+	--n_perm                      [integer] number of permutation test to be carried out to determine the significant threshold for CLDLA or H2 estimation 
+                                          [default: 100] 
+	--phase_genotypes             [boolean] whether or not to phase the genotypes
+	--phasing_panel               [string]  csv file containing information about path to the vcf files to be used for imputation
+	--phasing_map                 [string]  csv file containing information about path to the recombination map files
+	--phasing_tool                [string]  tool to be used for phasing: beagle5 or shapeit5 [default: beagle5]
+
+

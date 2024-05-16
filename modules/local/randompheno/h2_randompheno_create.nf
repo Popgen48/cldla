@@ -14,7 +14,7 @@ process H2_RANDOMPHENO_CREATE{
     
     script:
         
-        def n_random_window = params.n_permutation_h2
+        def n_random_window = params.n_perm
 
 
         """

@@ -94,6 +94,7 @@ Description of the parameters
 ------------------------------
 
 ..  code-block:: Bash
+
 	--input                       [string]  Path to comma-separated file containing information about the samples in the experiment.
 	--outdir                      [string]  The output directory where the results will be saved. You have to use absolute paths to storage on Cloud 
                                           infrastructure. 

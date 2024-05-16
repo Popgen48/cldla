@@ -2,6 +2,7 @@ process REML_GRM{
 
     tag { "reml grm" }
     label "process_medium"
+    conda "bioconda::gcta==1.94.1"
     container "popgen48/cldla_python_r_packages:1.0.0"
     publishDir("${params.outdir}/gcta/reml_grm/", mode:"copy")
 

@@ -216,12 +216,17 @@ class Blupf90Methods:
     def extract_logl(self, log_file):
         pattern = re.compile(r"-2logL([^0-9]+)([0-9.]+)")
         log_l = "na"
+        g_negative = False
         with open(log_file) as source:
             for line in source:
                 line = line.rstrip()
                 if "-2logL" in line:
                     match = re.findall(pattern, line)
                     log_l = float(match[0][1])
+                if "G not positive definite" in line:
+                    g_negative = True
+        if g_negative:
+            log_l = "na"
         return log_l
 
     def prepare_datfile(self, phe, prefix):
@@ -236,7 +241,7 @@ class Blupf90Methods:
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.log")
         return log_l
@@ -273,20 +278,20 @@ class Blupf90Methods:
     def run_blupf90(self, list_i):
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params && cp blupf90.log ../{prefix}.log && cd .. && rm -r {prefix}"
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.log")
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
     def vce_permutation_h0(self, prefix, grm):
-        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params && cp blupf90.log ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
+        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
         subprocess.call([command], shell=True)
         h0_logl = self.extract_logl(f"{prefix}.h0.perm.log")
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
-        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && blupf90+ {prefix}.h1.perm.params && cp blupf90.log ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
+        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && blupf90+ {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.h1.perm.log")
         return h1_logl
@@ -462,6 +467,7 @@ class VcfToLrt:
             h0_logl = self.asr.run_h0(param_file, "na", grm, pheno_file, "h0")
         else:
             h0_logl = self.blp.run_h0(param_file, "na", grm, pheno_file, "h0")
+        print("HERERERERE",h0_logl)
         # copy ginv of grm file to the output directory location and write the output file at the same location
         if store:
             # shutil.copy(f"{grm}", f"{output_dir}/")
@@ -596,19 +602,23 @@ class VcfToLrt:
                     results_perm = pool.map(self.blp.process_permutation_window, window_perm_process_list, 1)
             with open(f"{outprefix}_{chromosome}_perm_results.txt", "a") as dest:
                 for result in results_perm:
-                    dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
+                    if result:
+                        dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
         if store:
             with open(f"{outprefix}_{chromosome}_window_info.csv", "w") as dest:
-                for prefix in store_list:
-                    dest.write(
-                        f"{l_prefix},{output_dir}/{l_prefix}.giv,{output_dir}/{l_prefix}.dat,{output_dir}/{l_prefix}.params\n"
-                    )
+                for i,v in enumerate(store_list):
+                    if i==0:
+                        dest.write(f'{v}\n')
+                    else:
+                        dest.write(
+                            f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.params\n"
+                        )
         else:
             for prefix in store_list:
-                rm_command = f"rm {prefix}.{{dat,params,giv}}"
+                rm_command = f"rm {prefix}.{{dat,params}}"
                 subprocess.call([rm_command], shell=True)
-            rm_command = f"rm *.perm.*"
-            subprocess.call([rm_command], shell=True)
+            #rm_command = f"rm *.perm.*"
+            #subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):

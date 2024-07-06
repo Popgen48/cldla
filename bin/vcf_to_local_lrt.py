@@ -26,7 +26,7 @@ g_job_list = []
 class AsremlMethods:
 
     def __init__(self):
-        self.rm_file_pattern = ".{ask,aov,msv,res,rsv,tmp,tsv,veo,vvp,yht}"
+        self.rm_file_pattern = ".{ask,msv,res,rsv,tmp,tsv,veo,vvp,yht}"
 
     def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [f"{prefix}.as"] if model == "h1" else [grm.rstrip(".giv") + ".as"]
@@ -613,10 +613,10 @@ class VcfToLrt:
                         dest.write(
                             f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.params\n"
                         )
-        else:
-            for prefix in store_list:
-                rm_command = f"rm {prefix}.{{dat,params}}"
-                subprocess.call([rm_command], shell=True)
+        #else:
+        #    for prefix in store_list:
+        #        rm_command = f"rm {prefix}.{{dat,params}}"
+        #        subprocess.call([rm_command], shell=True)
             #rm_command = f"rm *.perm.*"
             #subprocess.call([rm_command], shell=True)
         vcf.close()

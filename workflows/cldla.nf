@@ -60,6 +60,7 @@ include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randomph
 include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
 include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
 include { PYTHON3_CALC_LRT } from '../modules/local/python3/calc_lrt/main'
+include { PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT } from '../modules/local/python3/prepare_manhttan_plot_input/main'
 //
 // MODULE: Installed directly from nf-core/modules
 //
@@ -227,10 +228,23 @@ workflow CLDLA {
 
     ch_lrt = UAR_INVERSE.out.giv.combine(pheno_f).combine(par_file).combine(PYTHON3_FILTER_VCF.out.gzvcf,by:0)
 
+    //
+    // MODULE: main python script to calculate lrt values
+    //
+
     PYTHON3_CALC_LRT(
         ch_lrt
     )
-
+    
+    lrt_f = PYTHON3_CALC_LRT.out.real_txt.map{v,f->f}.collect()
+        
+    //
+    // MODULE: python script to prepare the input file for manhattan plot
+    //
+    PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT(
+        ch_input,
+        lrt_f
+    )
 
     }
 }

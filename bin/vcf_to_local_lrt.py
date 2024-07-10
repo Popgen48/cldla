@@ -467,7 +467,6 @@ class VcfToLrt:
             h0_logl = self.asr.run_h0(param_file, "na", grm, pheno_file, "h0")
         else:
             h0_logl = self.blp.run_h0(param_file, "na", grm, pheno_file, "h0")
-        print("HERERERERE",h0_logl)
         # copy ginv of grm file to the output directory location and write the output file at the same location
         if store:
             # shutil.copy(f"{grm}", f"{output_dir}/")
@@ -574,6 +573,7 @@ class VcfToLrt:
         if len(g_job_list) > 0:
             with Pool(processes=len(g_job_list)) as pool:
                 pool.map(self.create_ginverse, g_job_list, 1)
+        if len(window_process_list) > 0:
             if tool == "asreml":
                 with Pool(processes=1) as pool:
                     results = pool.map(self.asr.run_asreml, window_process_list, 1)
@@ -613,12 +613,12 @@ class VcfToLrt:
                         dest.write(
                             f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.params\n"
                         )
-        #else:
-        #    for prefix in store_list:
-        #        rm_command = f"rm {prefix}.{{dat,params}}"
-        #        subprocess.call([rm_command], shell=True)
-            #rm_command = f"rm *.perm.*"
-            #subprocess.call([rm_command], shell=True)
+        else:
+            for prefix in store_list:
+                rm_command = f"rm {prefix}.{{dat,params}}"
+                subprocess.call([rm_command], shell=True)
+            rm_command = f"rm *.perm.*"
+            subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):

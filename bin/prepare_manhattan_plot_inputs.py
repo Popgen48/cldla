@@ -25,6 +25,9 @@ df = pd.DataFrame(global_list, columns = ['chrom', 'window_name','cord', 'LRT_va
 df = df.drop('window_name', axis=1)
 df["chrom"] = pd.to_numeric(df["chrom"])
 df["cord"] = pd.to_numeric(df["cord"])*1000000
+df["cord"] = df["cord"].astype(int)
+df["LRT_values"] = df["LRT_values"].astype(float)
+df.loc[df['LRT_values']<0,'LRT_values']=0
 
 if process != "estimate":
     df = df.sort_values(['chrom', 'cord'], ascending=[True, True])
@@ -34,5 +37,6 @@ else:
     df = df.sort_values(['chrom', 'LRT_values'], ascending=[True, False])
     df1=df.groupby('chrom').first()
     df1=df1.reset_index()
+    del df1['cord']
     with open(f"{outprefix}_chrom_threshold.txt","w") as dest:
-        dest.write(df1.to_string(header=False))
+        dest.write(df1.to_string(header=False, index=False))

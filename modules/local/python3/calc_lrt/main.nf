@@ -3,9 +3,6 @@ process PYTHON3_CALC_LRT{
     tag { "${meta.id}" }
     label "process_medium"
     publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:"copy")
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/pysam:0.22.0--py310h41dec4a_0':
-        'quay.io/biocontainers/pysam:0.22.0--py310h41dec4a_0' }"
     maxForks 1
 
     input:

@@ -12,17 +12,19 @@ process PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT{
         path(lrt_txt)
 
     output:
-        path("${outprefix}_maninp.txt"), emit: maninp_txt
+        path("*_maninp.txt"), emit: maninp_txt optional true
+        path("*_threshold.txt"), emit: threshold_txt optional true
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
         outprefix = params.output_prefix
+        def args = task.ext.args ?: ''
 
         """
         
-        python3 ${baseDir}/bin/prepare_manhattan_plot_input.py ${chrom_vcf_idx} ${outprefix} ${lrt_txt}
+        python3 ${baseDir}/bin/prepare_manhattan_plot_inputs.py ${chrom_vcf_idx} ${outprefix} ${args} ${lrt_txt}
 
 
         """ 

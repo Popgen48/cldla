@@ -16,11 +16,10 @@ from bokeh.models.tickers import FixedTicker
 
 
 class InteractiveManhattanplot:
-    def __init__(self, chrom_cord_val, yml_file, cutoff, chrom_cutoff_f, window_size, y_label, outprefix):
+    def __init__(self, chrom_cord_val, yml_file, chrom_cutoff_f, window_size, y_label, outprefix):
         self.outprefix = outprefix  # prefix of the output file
         self.chrom_cord_val = chrom_cord_val  # input file should be sorted by chromosome id i.e. 1,2,3,4,...,n
         self.yml_file = yml_file
-        self.cutoff = float(cutoff)
         self.window_size = int(window_size)  # use for ensembl link
         # self.min_score = 0  # important to set the min cordi of y axis
         # self.max_score = 0  # important to set the maxi cordi of y axis
@@ -34,11 +33,14 @@ class InteractiveManhattanplot:
         self.line_plot_d = {}
 
     def create_chrom_cutoff_dict(self):
+        lrt_l = []
         if os.path.isfile(self.chrom_cutoff_f):
             with open(self.chrom_cutoff_f) as source:
                 for line in source:
                     line = line.rstrip().split()
                     self.chrom_cutoff_d[line[0]] = line[1]
+                    lrt_l.append(float(line[1]))
+        self.cutoff = max(lrt_l)
 
     def read_yml_file(self):
         """
@@ -218,6 +220,6 @@ class InteractiveManhattanplot:
 
 if __name__ == "__main__":
     obk = InteractiveManhattanplot(
-        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7]
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
     )
     obk.main_func()

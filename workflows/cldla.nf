@@ -60,7 +60,8 @@ include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randomph
 include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
 include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
 include { PYTHON3_CALC_LRT } from '../modules/local/python3/calc_lrt/main'
-include { PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT } from '../modules/local/python3/prepare_manhttan_plot_input/main'
+include { PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT; PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT as PROCESS_PERM } from '../modules/local/python3/prepare_manhttan_plot_input/main'
+include { PYTHON3_MANHATTAN_PLOT } from '../modules/local/python3/manhattan_plot/main'
 //
 // MODULE: Installed directly from nf-core/modules
 //
@@ -237,6 +238,7 @@ workflow CLDLA {
     )
     
     lrt_f = PYTHON3_CALC_LRT.out.real_txt.map{v,f->f}.collect()
+    lrt_perm_f = PYTHON3_CALC_LRT.out.perm_txt.map{v,f->f}.collect()
         
     //
     // MODULE: python script to prepare the input file for manhattan plot
@@ -244,6 +246,30 @@ workflow CLDLA {
     PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT(
         ch_input,
         lrt_f
+    )
+
+
+    //
+    // MODULE: python script to prepare the input file for manhattan plot
+    //
+    PROCESS_PERM(
+        ch_input,
+        lrt_perm_f
+    )
+
+    plot_yml = Channel.fromPath(params.manhattan_plot_yml, checkIfExists: true)
+
+    //
+    //MODULE: for generating manhattan plot
+    //
+
+    plot_yml = Channel.fromPath(params.manhattan_plot_yml, checkIfExists: true)
+
+
+    PYTHON3_MANHATTAN_PLOT(
+        PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT.out.maninp_txt,
+        plot_yml,
+        PROCESS_PERM.out.threshold_txt
     )
 
     }

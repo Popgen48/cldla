@@ -519,7 +519,7 @@ class VcfToLrt:
                 hzgys = g_list_homo_dict[1]
                 window_number += 1
                 if window_number==2:
-                    for i in range(2,int(window_size/2)+1):
+                    for i in range(2,int(window_size/2)+2):
                         win_min_point = statistics.median(list(positions.values())[:window_number])
                         window_process_list.append(
                             (
@@ -641,12 +641,12 @@ class VcfToLrt:
                     if i==0:
                         dest.write(f'{v}\n')
                     else:
-                        param_ext = "params" if tool == "asreml" else "asr"
+                        param_ext = "as" if tool == "asreml" else "params"
                         dest.write(
                             f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n"
                         )
         else:
-            param_ext = "params" if tool == "asreml" else "asr"
+            param_ext = "as" if tool == "asreml" else "params"
             for prefix in store_list:
                 rm_command = f"rm {prefix}.dat && rm {prefix}.{param_ext}"
                 subprocess.call([rm_command], shell=True)

@@ -456,7 +456,7 @@ class VcfToLrt:
             pheno_file
         )  # data file of phenotypes-->sample_index, sample_id, effect1 (x1), effect2 (x2),observation (y); y should always be the last column
         dataset = outprefix
-        window_number = 0
+        window_number = 1
         window_process_list = []  # list will collect the parameters to run asreml and blupf90
         window_perm_process_list = (
             []
@@ -518,15 +518,63 @@ class VcfToLrt:
                 positions = g_list_pos_dict[1]
                 hzgys = g_list_homo_dict[1]
                 window_number += 1
-                win_min_point = statistics.median(list(positions.values()))
-                window_process_list.append(
-                    (
-                        f"{dataset}.{chromosome}.{window_number}",
-                        float(h0_logl),
-                        win_min_point,
-                        None if tool == "asreml" else grm,
+                if window_number==2:
+                    for i in range(2,int(window_size/2)+1):
+                        win_min_point = statistics.median(list(positions.values())[:window_number])
+                        window_process_list.append(
+                            (
+                                f"{dataset}.{chromosome}.{window_number}",
+                                float(h0_logl),
+                                win_min_point,
+                                None if tool == "asreml" else grm,
+                            )
+                        )
+                        g_job_list.append(
+                            (
+                                dataset,
+                                chromosome,
+                                sample_genotypes,
+                                positions,
+                                hzgys,
+                                window_number,
+                                window_size,
+                                pheno_file,
+                                param_file,
+                                tool,
+                                grm,
+                                # store,
+                                # output_dir,
+                            )
+                        )
+                        window_number+=1
+                    window_number-=1
+                else:
+                    win_min_point = statistics.median(list(positions.values()))
+                    window_process_list.append(
+                        (
+                            f"{dataset}.{chromosome}.{window_number}",
+                            float(h0_logl),
+                            win_min_point,
+                            None if tool == "asreml" else grm,
+                        )
                     )
-                )
+                    g_job_list.append(
+                        (
+                            dataset,
+                            chromosome,
+                            sample_genotypes,
+                            positions,
+                            hzgys,
+                            window_number,
+                            window_size,
+                            pheno_file,
+                            param_file,
+                            tool,
+                            grm,
+                            # store,
+                            # output_dir,
+                        )
+                    )
                 if num_perm > 0:
                     window_perm_process_list.append(
                         (
@@ -535,23 +583,6 @@ class VcfToLrt:
                             None if tool == "asreml" else grm,
                         )
                     )
-                g_job_list.append(
-                    (
-                        dataset,
-                        chromosome,
-                        sample_genotypes,
-                        positions,
-                        hzgys,
-                        window_number,
-                        window_size,
-                        pheno_file,
-                        param_file,
-                        tool,
-                        grm,
-                        # store,
-                        # output_dir,
-                    )
-                )
                 del g_list_geno_dict[1]
                 del g_list_pos_dict[1]
                 del g_list_homo_dict[1]
@@ -610,12 +641,14 @@ class VcfToLrt:
                     if i==0:
                         dest.write(f'{v}\n')
                     else:
+                        param_ext = "params" if tool == "asreml" else "asr"
                         dest.write(
-                            f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.params\n"
+                            f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n"
                         )
         else:
+            param_ext = "params" if tool == "asreml" else "asr"
             for prefix in store_list:
-                rm_command = f"rm {prefix}.{{dat,params}}"
+                rm_command = f"rm {prefix}.dat && rm {prefix}.{param_ext}"
                 subprocess.call([rm_command], shell=True)
             rm_command = f"rm *.perm.*"
             subprocess.call([rm_command], shell=True)
@@ -659,9 +692,9 @@ class VcfToLrt:
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
-            + "&& rm "
-            + prefix
-            + ".{Hap,Map,par,grm,B.grm}"
+            #+ "&& rm "
+            #+ prefix
+            #+ ".{Hap,Map,par,grm,B.grm}"
         )
 
         subprocess.call([command], shell=True)

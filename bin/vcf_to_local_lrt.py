@@ -213,7 +213,7 @@ class Blupf90Methods:
                 dest.write(f"OPTION maxrounds 100")
                 dest.write("\n")
 
-    def extract_logl(self, log_file):
+    def extract_logl(self, log_file, ori_window):
         pattern = re.compile(r"-2logL([^0-9]+)([0-9.]+)")
         log_l = "na"
         g_negative = False
@@ -225,6 +225,10 @@ class Blupf90Methods:
                     log_l = float(match[0][1])
                 if "G not positive definite" in line:
                     g_negative = True
+                if not ori_window:
+                    if "delta convergence=" in line:
+                        if "0.000000000" in line:
+                            g_negative = True
         if g_negative:
             log_l = "na"
         return log_l
@@ -243,7 +247,7 @@ class Blupf90Methods:
         self.prepare_datfile(phe, prefix)
         command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
-        log_l = self.extract_logl(f"{prefix}.log")
+        log_l = self.extract_logl(f"{prefix}.log", True)
         return log_l
 
     def create_permutation_params(self, prefix, grm_prefix):
@@ -280,20 +284,20 @@ class Blupf90Methods:
         win_ginv = prefix.rstrip(".perm") + ".giv"
         command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
-        h1_logl = self.extract_logl(f"{prefix}.log")
+        h1_logl = self.extract_logl(f"{prefix}.log",True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
     def vce_permutation_h0(self, prefix, grm):
         command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
         subprocess.call([command], shell=True)
-        h0_logl = self.extract_logl(f"{prefix}.h0.perm.log")
+        h0_logl = self.extract_logl(f"{prefix}.h0.perm.log", False)
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
         command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && blupf90+ {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
         subprocess.call([command], shell=True)
-        h1_logl = self.extract_logl(f"{prefix}.h1.perm.log")
+        h1_logl = self.extract_logl(f"{prefix}.h1.perm.log", False)
         return h1_logl
 
     def process_permutation_window(self, list_i):
@@ -650,8 +654,8 @@ class VcfToLrt:
             for prefix in store_list:
                 rm_command = f"rm {prefix}.dat && rm {prefix}.{param_ext}"
                 subprocess.call([rm_command], shell=True)
-            rm_command = f"rm *.perm.*"
-            subprocess.call([rm_command], shell=True)
+            #rm_command = f"rm *.perm.*"
+            #subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):

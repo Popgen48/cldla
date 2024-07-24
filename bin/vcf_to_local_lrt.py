@@ -11,6 +11,7 @@ import random
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
 from random import shuffle
+import shutil
 
 
 abspath = os.path.abspath(__file__)
@@ -82,6 +83,7 @@ class AsremlMethods:
         return log_l
 
     def run_asreml(self, list_i):
+        u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
         subprocess.call([command], shell=True)
@@ -280,6 +282,7 @@ class Blupf90Methods:
                             dest_h1.write(f"{line}\n")
 
     def run_blupf90(self, list_i):
+        u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
         command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
@@ -287,6 +290,8 @@ class Blupf90Methods:
         h1_logl = self.extract_logl(f"{prefix}.log",True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
+
+
 
     def vce_permutation_h0(self, prefix, grm):
         command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
@@ -430,6 +435,7 @@ class util:
                         dest.write(" ".join(v) + "\n")
                         dest_h0.write(" ".join(v[:-1]) + "\n")
                         # del v[-2]  # avoid the aliasing issue
+    
 
 
 class VcfToLrt:
@@ -475,9 +481,12 @@ class VcfToLrt:
         if store:
             # shutil.copy(f"{grm}", f"{output_dir}/")
             prefix = grm.rstrip(".giv")
+            param_ext = "as" if tool == "asreml" else "params"
             store_list.append(
-                f"{prefix},{output_dir}/{grm},{output_dir}/{prefix}.dat,{output_dir}/{prefix}.params"
+                f"{prefix},{output_dir}/{grm},{output_dir}/{pheno_file},{output_dir}/{prefix}.{param_ext}"
             )  # write the window record for H0 hypothesis
+            cp_command = f'cp {prefix}.{{giv,{param_ext}}} {pheno_file} {output_dir}/ '
+            subprocess.call([cp_command], shell=True)
         # Iterate through VCF records
         for i, record in enumerate(vcf):
             last_ele = -1
@@ -546,8 +555,6 @@ class VcfToLrt:
                                 param_file,
                                 tool,
                                 grm,
-                                # store,
-                                # output_dir,
                             )
                         )
                         window_number+=1
@@ -575,8 +582,6 @@ class VcfToLrt:
                             param_file,
                             tool,
                             grm,
-                            # store,
-                            # output_dir,
                         )
                     )
                 if num_perm > 0:
@@ -600,10 +605,10 @@ class VcfToLrt:
                             for result in results:
                                 if result:
                                     dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
-                        for i, v in enumerate(g_job_list):
-                            l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
-                            store_list.append(l_prefix)
                         del window_process_list[:]
+                    for i, v in enumerate(g_job_list):
+                        l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
+                        store_list.append(l_prefix)
                     del g_job_list[:]
         if len(g_job_list) > 0:
             with Pool(processes=len(g_job_list)) as pool:
@@ -617,7 +622,6 @@ class VcfToLrt:
                         if result:
                             dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
             else:
-                # if len(window_process_list) > 0:
                 with Pool(processes=len(window_process_list)) as pool:
                     results = pool.map(self.blp.run_blupf90, window_process_list, 1)
                 with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
@@ -640,22 +644,25 @@ class VcfToLrt:
                     if result:
                         dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
         if store:
-            with open(f"{outprefix}_{chromosome}_window_info.csv", "w") as dest:
-                for i,v in enumerate(store_list):
-                    if i==0:
-                        dest.write(f'{v}\n')
-                    else:
-                        param_ext = "as" if tool == "asreml" else "params"
-                        dest.write(
-                            f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n"
-                        )
-        else:
-            param_ext = "as" if tool == "asreml" else "params"
-            for prefix in store_list:
-                rm_command = f"rm {prefix}.dat && rm {prefix}.{param_ext}"
+            dest = open(f"{outprefix}_{chromosome}_window_info.csv", "w")
+        param_ext = "as" if tool == "asreml" else "params"
+        for i,v in enumerate(store_list):
+            if store:
+                if i==0:
+                    dest.write(f'{v}\n')
+                else:
+                    dest.write(
+                        f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n"
+                    )
+                    cp_command = f'cp {v}.{{giv,{param_ext},dat}} {output_dir}/'
+                    subprocess.call([cp_command], shell=True)
+                    rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
+                    subprocess.call([rm_command], shell=True)
+            else:
+                rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
                 subprocess.call([rm_command], shell=True)
-            #rm_command = f"rm *.perm.*"
-            #subprocess.call([rm_command], shell=True)
+        rm_command = f"rm *.perm.*"
+        subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -672,8 +679,6 @@ class VcfToLrt:
             params_file,
             tool,
             grm,
-            # store,
-            # output_dir,
         ) = input_list
         prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
@@ -691,22 +696,15 @@ class VcfToLrt:
         else:
             self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for blupf90
 
-        # if permutation:
-        #    self.u.generate_pseudo_pheno(prefix, pheno_col, 1)
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
-            #+ "&& rm "
-            #+ prefix
-            #+ ".{Hap,Map,par,grm,B.grm}"
+            + "&& rm "
+            + prefix
+            + ".{Hap,Map,par,grm,B.grm}"
         )
 
         subprocess.call([command], shell=True)
-
-        # if store:
-        #    shutil.copy(f"{prefix}.giv", f"{output_dir}/")
-        #    shutil.copy(f"{prefix}.params", f"{output_dir}/")
-        #    shutil.copy(f"{prefix}.dat", f"{output_dir}/")
 
         print(f"Generated .dat and .giv for {window_number}")
 
@@ -772,7 +770,7 @@ if __name__ == "__main__":
         help="whether or not to store ginv, grm and phenotype file for each window",
         action="store_true",
     )
-    parser.add_argument("-O", "--output_dir", help="path to the output directory", required=False)
+    parser.add_argument("-O", "--output_dir", help="path to the output directory", default="cldla",required=False)
 
     args = parser.parse_args()
 

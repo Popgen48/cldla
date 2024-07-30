@@ -81,10 +81,6 @@
                     "description": "tool to estimate variance components",
                     "enum": ["blupf90", "asreml"]
                 },
-                "par_file": {
-                    "type": "string",
-                    "description": "parameter file of the tool"
-                },
                 "n_perm": {
                     "type": "integer",
                     "default": 100,
@@ -109,6 +105,21 @@
                     "default": "beagle5",
                     "description": "tool to be used for phasing: beagle5 or shapeit5",
                     "enum": ["beagle5", "shapeit5"]
+                },
+                "manhattan_plot_yml": {
+                    "type": "string",
+                    "default": "popgen-cldla/manhattanplot.yml"
+                },
+                "default_asreml_params": {
+                    "type": "string",
+                    "default": "popgen-cldla/assets/extra_asreml_params.txt"
+                },
+                "default_blupf90_params": {
+                    "type": "string",
+                    "default": "popgen-cldla/assets/extra_blup_params.txt"
+                },
+                "extra_params": {
+                    "type": "string"
                 }
             }
         },

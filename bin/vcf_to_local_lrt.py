@@ -60,7 +60,7 @@ class AsremlMethods:
                             elif model == "h1" and i == 1:
                                 dest.write(f"{prefix}.perm.dat {line}")
                             else:
-                                dest.write(f"{prefix} {line}")
+                                dest.write(f"{prefix}.h0.dat {line}")
                             dest.write("\n")
                             ilc += 1
                         elif ilc == 4:
@@ -74,9 +74,20 @@ class AsremlMethods:
                             dest.write(f"{line}")
                             dest.write("\n")
 
+    def prepare_new_dat_file(self, phe):
+        with open(f"{phe}.h0.dat", "w") as dest:
+            with open(phe) as source:
+                header = True
+                for line in source:
+                    if header:
+                        header = False
+                    else:
+                        dest.write(line)
+
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, phe, model)
+        self.prepare_new_dat_file(phe)
         command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.asr")
@@ -236,12 +247,16 @@ class Blupf90Methods:
         return log_l
 
     def prepare_datfile(self, phe, prefix):
+        header = True
         with open(prefix + ".dat", "w") as dest:
             with open(phe) as source:
                 for line in source:
-                    line = line.rstrip().split()
-                    del line[1]
-                    dest.write(" ".join(line) + "\n")
+                    if header == True:
+                        header = False
+                    else:
+                        line = line.rstrip().split()
+                        del line[1]
+                        dest.write(" ".join(line) + "\n")
 
     def run_h0(self, params_file, diplo, grm, phe, model):
         prefix = grm.rstrip(".giv")
@@ -287,11 +302,9 @@ class Blupf90Methods:
         win_ginv = prefix.rstrip(".perm") + ".giv"
         command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && blupf90+ {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
-        h1_logl = self.extract_logl(f"{prefix}.log",True)
+        h1_logl = self.extract_logl(f"{prefix}.log", True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
-
-
 
     def vce_permutation_h0(self, prefix, grm):
         command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && blupf90+ {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
@@ -331,15 +344,19 @@ class util:
                     lc += 1
             with open(pheno_file) as source:
                 lc = 0
+                header = True
                 for line in source:
-                    line = line.rstrip().split()
-                    pheno_col = len(line)
-                    if tool == "blupf90":
-                        del line[1]
-                    line.append(indi_diplo_dict[lc])
-                    dest.write(" ".join(line))
-                    dest.write("\n")
-                    lc += 1
+                    if header:
+                        header = False
+                    else:
+                        line = line.rstrip().split()
+                        pheno_col = len(line)
+                        if tool == "blupf90":
+                            del line[1]
+                        line.append(indi_diplo_dict[lc])
+                        dest.write(" ".join(line))
+                        dest.write("\n")
+                        lc += 1
         if pheno_col == 0:
             print("ERROR: phenotype column not set")
             sys.exit(1)
@@ -435,7 +452,6 @@ class util:
                         dest.write(" ".join(v) + "\n")
                         dest_h0.write(" ".join(v[:-1]) + "\n")
                         # del v[-2]  # avoid the aliasing issue
-    
 
 
 class VcfToLrt:
@@ -485,7 +501,7 @@ class VcfToLrt:
             store_list.append(
                 f"{prefix},{output_dir}/{grm},{output_dir}/{pheno_file},{output_dir}/{prefix}.{param_ext}"
             )  # write the window record for H0 hypothesis
-            cp_command = f'cp {prefix}.{{giv,{param_ext}}} {pheno_file} {output_dir}/ '
+            cp_command = f"cp {prefix}.{{giv,{param_ext}}} {pheno_file} {output_dir}/ "
             subprocess.call([cp_command], shell=True)
         # Iterate through VCF records
         for i, record in enumerate(vcf):
@@ -531,8 +547,8 @@ class VcfToLrt:
                 positions = g_list_pos_dict[1]
                 hzgys = g_list_homo_dict[1]
                 window_number += 1
-                if window_number==2:
-                    for i in range(2,int(window_size/2)+2):
+                if window_number == 2:
+                    for i in range(2, int(window_size / 2) + 2):
                         win_min_point = statistics.median(list(positions.values())[:window_number])
                         window_process_list.append(
                             (
@@ -557,8 +573,8 @@ class VcfToLrt:
                                 grm,
                             )
                         )
-                        window_number+=1
-                    window_number-=1
+                        window_number += 1
+                    window_number -= 1
                 else:
                     win_min_point = statistics.median(list(positions.values()))
                     window_process_list.append(
@@ -646,15 +662,13 @@ class VcfToLrt:
         if store:
             dest = open(f"{outprefix}_{chromosome}_window_info.csv", "w")
         param_ext = "as" if tool == "asreml" else "params"
-        for i,v in enumerate(store_list):
+        for i, v in enumerate(store_list):
             if store:
-                if i==0:
-                    dest.write(f'{v}\n')
+                if i == 0:
+                    dest.write(f"{v}\n")
                 else:
-                    dest.write(
-                        f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n"
-                    )
-                    cp_command = f'cp {v}.{{giv,{param_ext},dat}} {output_dir}/'
+                    dest.write(f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n")
+                    cp_command = f"cp {v}.{{giv,{param_ext},dat}} {output_dir}/"
                     subprocess.call([cp_command], shell=True)
                     rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
                     subprocess.call([rm_command], shell=True)
@@ -695,7 +709,6 @@ class VcfToLrt:
             self.asr.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for asreml
         else:
             self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for blupf90
-
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
@@ -770,7 +783,7 @@ if __name__ == "__main__":
         help="whether or not to store ginv, grm and phenotype file for each window",
         action="store_true",
     )
-    parser.add_argument("-O", "--output_dir", help="path to the output directory", default="cldla",required=False)
+    parser.add_argument("-O", "--output_dir", help="path to the output directory", default="cldla", required=False)
 
     args = parser.parse_args()
 

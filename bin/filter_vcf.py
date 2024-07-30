@@ -6,10 +6,14 @@ import argparse
 
 def make_sample_list(incl_samples):
     sample_list = []
+    header = True
     with open(incl_samples) as source:
         for line in source:
-            line = line.rstrip().split()
-            sample_list.append(line[1])
+            if header:
+                header = False
+            else:
+                line = line.rstrip().split()
+                sample_list.append(line[1])
     return sample_list
 
 
@@ -54,9 +58,7 @@ def read_vcf(vcf_path, incl_samples, maf_threshold, output_file):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="python script to filter vcf files based on maf and samples"
-    )
+    parser = argparse.ArgumentParser(description="python script to filter vcf files based on maf and samples")
 
     parser.add_argument("-v", "--vcf", metavar="String", help="input phased vcf file", required=True)
     parser.add_argument("-s", "--sample_file", metavar="String", help="samples to be included", required=True)

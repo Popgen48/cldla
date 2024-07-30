@@ -59,6 +59,7 @@ include { REML_GRM } from '../modules/local/gcta/reml_grm'
 include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randompheno_create'
 include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
 include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
+include { PYTHON3_PREPARE_PARAMETER_TEMPLATE } from '../modules/local/python3/prepare_parameter_template/main'
 include { PYTHON3_CALC_LRT } from '../modules/local/python3/calc_lrt/main'
 include { PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT; PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT as PROCESS_PERM } from '../modules/local/python3/prepare_manhttan_plot_input/main'
 include { PYTHON3_MANHATTAN_PLOT } from '../modules/local/python3/manhattan_plot/main'
@@ -225,9 +226,20 @@ workflow CLDLA {
         chrom_lgen_uar
     )
 
-    par_file = Channel.fromPath(params.par_file) //read parameter file
+    //
+    // MODULE: prepare parameter template file for the tools asreml or blupf90
+    //
+    
 
-    ch_lrt = UAR_INVERSE.out.giv.combine(pheno_f).combine(par_file).combine(PYTHON3_FILTER_VCF.out.gzvcf,by:0)
+    par_file = params.extra_params ? Channel.fromPath(params.extra_params) : (params.tool == "asreml"? Channel.fromPath(params.default_asreml_params): Channel.fromPath(params.default_blupf90_params))
+
+    PYTHON3_PREPARE_PARAMETER_TEMPLATE(
+        pheno_f,
+        par_file
+    )
+
+
+    ch_lrt = UAR_INVERSE.out.giv.combine(pheno_f).combine(params.tool == "asreml" ? PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.asr_template: PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.blp_template).combine(PYTHON3_FILTER_VCF.out.gzvcf,by:0)
 
     //
     // MODULE: main python script to calculate lrt values

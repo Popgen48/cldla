@@ -15,6 +15,7 @@ process PYTHON3_PREPARE_PARAMETER_TEMPLATE{
     output:
         path ("*.params"), emit: blp_template, optional: true
         path ("*.as"), emit: asr_template, optional: true
+        path ("*_updated.phe"), emit: updated_phe
         
     
     script:

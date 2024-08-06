@@ -239,7 +239,7 @@ workflow CLDLA {
     )
 
 
-    ch_lrt = UAR_INVERSE.out.giv.combine(pheno_f).combine(params.tool == "asreml" ? PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.asr_template: PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.blp_template).combine(PYTHON3_FILTER_VCF.out.gzvcf,by:0)
+    ch_lrt = UAR_INVERSE.out.giv.combine(PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.updated_phe).combine(params.tool == "asreml" ? PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.asr_template: PYTHON3_PREPARE_PARAMETER_TEMPLATE.out.blp_template).combine(PYTHON3_FILTER_VCF.out.gzvcf,by:0)
 
     //
     // MODULE: main python script to calculate lrt values

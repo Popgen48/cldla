@@ -11,7 +11,6 @@ import random
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
 from random import shuffle
-import shutil
 
 
 abspath = os.path.abspath(__file__)

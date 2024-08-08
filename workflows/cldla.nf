@@ -60,7 +60,7 @@ include { H2_RANDOMPHENO_CREATE } from '../modules/local/randompheno/h2_randomph
 include { REML_GRM as REML_GRM_SIM } from '../modules/local/gcta/reml_grm'
 include { PLOT_H2_HISTOGRAM } from '../modules/local/gcta/plot_h2_histogram'
 include { PYTHON3_PREPARE_PARAMETER_TEMPLATE } from '../modules/local/python3/prepare_parameter_template/main'
-include { PYTHON3_CALC_LRT } from '../modules/local/python3/calc_lrt/main'
+include { PYTHON3_CALC_LRT; PYTHON3_CALC_LRT as PYTHON3_CALC_LRT_ASREML } from '../modules/local/python3/calc_lrt/main'
 include { PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT; PYTHON3_PREPARE_MANHATTAN_PLOT_INPUT as PROCESS_PERM } from '../modules/local/python3/prepare_manhttan_plot_input/main'
 include { PYTHON3_MANHATTAN_PLOT } from '../modules/local/python3/manhattan_plot/main'
 //
@@ -245,12 +245,27 @@ workflow CLDLA {
     // MODULE: main python script to calculate lrt values
     //
 
-    PYTHON3_CALC_LRT(
-        ch_lrt
-    )
-    
-    lrt_f = PYTHON3_CALC_LRT.out.real_txt.map{v,f->f}.collect()
-    lrt_perm_f = PYTHON3_CALC_LRT.out.perm_txt.map{v,f->f}.collect()
+    if (params.tool == "blupf90" ){
+
+
+        PYTHON3_CALC_LRT(
+            ch_lrt
+        )
+        
+        lrt_f = PYTHON3_CALC_LRT.out.real_txt.map{v,f->f}.collect()
+        lrt_perm_f = PYTHON3_CALC_LRT.out.perm_txt.map{v,f->f}.collect()
+        }
+    else{
+
+        PYTHON3_CALC_LRT_ASREML(
+            ch_lrt
+        )
+        
+        lrt_f = PYTHON3_CALC_LRT_ASREML.out.real_txt.map{v,f->f}.collect()
+        lrt_perm_f = PYTHON3_CALC_LRT_ASREML.out.perm_txt.map{v,f->f}.collect()
+
+        }
+
         
     //
     // MODULE: python script to prepare the input file for manhattan plot

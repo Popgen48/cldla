@@ -3,6 +3,9 @@ process PYTHON3_CALC_LRT{
     tag { "${meta.id}" }
     label "process_medium"
     publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:"copy")
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'docker://popgen48/cldla:1.0.0' :
+        'popgen48/cldla:1.0.0' }"
     maxForks 1
 
     input:

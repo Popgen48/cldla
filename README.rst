@@ -31,7 +31,7 @@ Input files
 
 ..  code-block:: Bash
 
-    iidx  iid  sex  age  bodywgt  witherhgt  taillgt 
+    iidx  iid  sex  age  bodywgt  witherhgt  taillgt
     1  MLS169  1  11  10.6  47.0  32.7
     2  MLS170  1  9  12.0  44.2  33.6
     .
@@ -42,8 +42,7 @@ Input files
 
 | 3. Parameter file
 
-| Depending on the tool specified by the user, the workflow will generate the parameter file. 
-    
+| Depending on the tool specified by the user, the workflow will generate the parameter file.    
 | **things to consider in the parameter template file**
 | 1. If you have not used any of the two programs (asreml and blupf90+) implemented for variance component estimation before, please Refer to its respective documentation: `asreml documentation <https://asreml.kb.vsni.co.uk/wp-content/uploads/sites/3/ASReml-R-Reference-Manual-4.2.pdf>`_ or `blupf90+ documentation <http://nce.ads.uga.edu/html/projects/programs/docs/blupf90_all8.pdf>`_. 
 | 2. Note that in the current version, the MLMs are tested with two mixed effects : additive polygenic effect and additive QTL effects.
@@ -72,7 +71,7 @@ Description of the parameters
 
     --input                       [string]  Path to comma-separated file containing information about the samples in the experiment.
     --outdir                      [string]  The output directory where the results will be saved. You have to use absolute paths to storage on Cloud 
-                                          infrastructure. 
+                                            infrastructure.
     --email                       [string]  Email address for completion summary.
     --maf                         [number]  minor allele frequency threshold; SNPs with MAF less than this threshold will filtered out
     --window_size                 [number]  Window size to carry out cLDLA analysis [default: 40]
@@ -86,7 +85,7 @@ Description of the parameters
     --tool                        [string]  tool to estimate variance components [default: blupf90]
     --par_file                    [string]  parameter file of the tool
     --n_perm                      [integer] number of permutation test to be carried out to determine the significant threshold for CLDLA or H2 estimation 
-                                          [default: 100] 
+                                          [default: 100]
     --phase_genotypes             [boolean] whether or not to phase the genotypes
     --phasing_panel               [string]  csv file containing information about path to the vcf files to be used for imputation
     --phasing_map                 [string]  csv file containing information about path to the recombination map files

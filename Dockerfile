@@ -10,4 +10,4 @@ RUN Rscript /home/install_packages.r
 
 RUN pip3 install -r /home/requirements.txt
 
-RUN wget https://yanglab.westlake.edu.cn/software/gcta/bin/gcta-1.94.1-linux-kernel-3-x86_64.zip && unzip gcta-1.94.1-linux-kernel-3-x86_64.zip && cp /gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1 /usr/local/bin/gcta && rm *.zip 
+RUN wget https://yanglab.westlake.edu.cn/software/gcta/bin/gcta-1.94.1-linux-kernel-3-x86_64.zip && unzip gcta-1.94.1-linux-kernel-3-x86_64.zip && cp /gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1 /usr/local/bin/gcta && rm *.zip

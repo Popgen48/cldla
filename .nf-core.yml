@@ -1,1 +1,4 @@
 repository_type: pipeline
+lint:
+  template_strings:
+    - bin/vcf_to_local_lrt.py

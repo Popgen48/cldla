@@ -30,6 +30,7 @@ Input files
 | 2. Phenotype file
 
 ..  code-block:: Bash
+
     iidx  iid  sex  age  bodywgt  witherhgt  taillgt 
     1  MLS169  1  11  10.6  47.0  32.7
     2  MLS170  1  9  12.0  44.2  33.6

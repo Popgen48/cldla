@@ -43,7 +43,7 @@
                 "window_size": {
                     "type": "number",
                     "description": "Window size to carry out cLDLA analysis",
-                    "default": 40
+                    "default": 40.0
                 },
                 "output_prefix": {
                     "type": "string",
@@ -72,7 +72,7 @@
                 },
                 "lrt_threhold": {
                     "type": "number",
-                    "default": 18,
+                    "default": 18.0,
                     "description": "lrt values above which the values are significant"
                 },
                 "tool": {
@@ -85,10 +85,6 @@
                     "type": "integer",
                     "default": 100,
                     "description": "number of permutation test to be carried out to determine the significant threshold for CLDLA or H2 estimation"
-                },
-                "phase_genotypes": {
-                    "type": "boolean",
-                    "description": "whether or not to phase the genotypes"
                 },
                 "phasing_panel": {
                     "type": "string",
@@ -120,6 +116,10 @@
                 },
                 "extra_params": {
                     "type": "string"
+                },
+                "skip_phasing": {
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },

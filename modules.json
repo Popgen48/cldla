@@ -35,6 +35,11 @@
                         "git_sha": "d1112c6df96b33e845085cf0c1330593c9cb3ac8",
                         "installed_by": ["modules"]
                     },
+                    "shapeit5/phasecommon": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": ["modules"]
+                    },
                     "tabix/tabix": {
                         "branch": "master",
                         "git_sha": "0840b387799172e77510393ed09e4d4ec1bc6d7c",

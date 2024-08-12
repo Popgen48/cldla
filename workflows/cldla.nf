@@ -100,7 +100,7 @@ workflow CLDLA {
 
     pheno_f = Channel.fromPath(params.pheno_file) //read phenotype file
 
-    if (params.phase_genotypes == true) {
+    if (params.skip_phasing == false) {
         PHASE_GENOTYPES(
         CHECK_INPUT.out.meta_vcf_idx
         )
@@ -132,7 +132,7 @@ workflow CLDLA {
     //
 
     BCFTOOLS_CONCAT(
-        t_output_vcf.map { prefix, vcf->tuple(prefix, vcf, []) }
+        t_output_vcf.map { prefix, vcf->tuple([id:prefix], vcf, []) }
     )
 
     // determine whether or not to estimate heritability, note that cldla and estimating heritability are mutually exclusive process

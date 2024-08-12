@@ -68,10 +68,10 @@ workflow PHASE_GENOTYPES {
         //MODULE: TABIX_PHASED_VCF
         //
         TABIX_PHASED_VCF(
-            params.beagle5 ? BEAGLE5_BEAGLE.out.vcf : SHAPEIT5_PHASECOMMON.out.phased_variant
+            params.phasing_tool == 'beagle5' ? BEAGLE5_BEAGLE.out.vcf : SHAPEIT5_PHASECOMMON.out.phased_variant
         )
 
-        n1_meta_vcf_idx_map = params.phasing_tool == 'beagle5' ? BEAGLE5_BEAGLE.out.vcf.join(TABIX_PHASED_VCF.out.tbi) : SHAPEIT5_PHASECOMMON.out.phased_variant.join(TABIX_PHASED_VCF.out.tbi)
+        n1_meta_vcf_idx = params.phasing_tool == 'beagle5' ? BEAGLE5_BEAGLE.out.vcf.join(TABIX_PHASED_VCF.out.tbi) : SHAPEIT5_PHASECOMMON.out.phased_variant.join(TABIX_PHASED_VCF.out.tbi)
 
         emit:
             n1_meta_vcf_idx = n1_meta_vcf_idx

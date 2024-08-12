@@ -1,10 +1,10 @@
 name: cldla_0.1.1
 channels:
-        - conda-forge
-        - bioconda
-        - defaults
+  - conda-forge
+  - bioconda
+  - defaults
 dependencies:
-        - conda-forge::python=3.10
-        - conda-forge::gfortran=13.2.0
-        - bioconda::pysam=0.20.0
-        - conda-forge::bokeh
+  - conda-forge::python=3.10
+  - conda-forge::gfortran=13.2.0
+  - bioconda::pysam=0.20.0
+  - conda-forge::bokeh

@@ -2,9 +2,9 @@ process BEAGLE5_BEAGLE {
     tag "$meta.id"
     label 'process_high'
 
-    conda 'bioconda::beagle=5.2_21Apr21.304'
+    conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/beagle:5.2_21Apr21.304--hdfd78af_0' :
+        'https://depot.galaxyproject.org/singularity/beagle:5.2_21Apr21.304--hdfd78af_0':
         'biocontainers/beagle:5.2_21Apr21.304--hdfd78af_0' }"
 
     input:
@@ -15,9 +15,9 @@ process BEAGLE5_BEAGLE {
     path(exclmarkers)
 
     output:
-    tuple val(meta), path('*.vcf.gz')     , emit: vcf
-    tuple val(meta), path('*.log')        , emit: log
-    path 'versions.yml'                   , emit: versions
+    tuple val(meta), path("*.vcf.gz")     , emit: vcf
+    tuple val(meta), path("*.log")        , emit: log
+    path "versions.yml"                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -25,16 +25,16 @@ process BEAGLE5_BEAGLE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}.bglout"
-    def ref_command = refpanel ? "ref=$refpanel" : ''
-    def map_command = genmap ? "map=$genmap" : ''
-    def excludesamples_command = exclsamples ? "excludesamples=$exclsamples" : ''
-    def excludemarkers_command = exclmarkers ? "excludemarkers=$exclmarkers" : ''
+    def ref_command = refpanel ? "ref=$refpanel" : ""
+    def map_command = genmap ? "map=$genmap" : ""
+    def excludesamples_command = exclsamples ? "excludesamples=$exclsamples" : ""
+    def excludemarkers_command = exclmarkers ? "excludemarkers=$exclmarkers" : ""
 
     def avail_mem = 3072
     if (!task.memory) {
         log.info '[beagle] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this.'
     } else {
-        avail_mem = (task.memory.mega * 0.8).intValue()
+        avail_mem = (task.memory.mega*0.8).intValue()
     }
 
     """

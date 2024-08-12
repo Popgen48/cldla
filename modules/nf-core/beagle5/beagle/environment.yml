@@ -1,7 +1,7 @@
-name: plink2_vcf
+name: beagle5_beagle
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - bioconda::plink2=2.00a2.3
+  - bioconda::beagle=5.2_21Apr21.304

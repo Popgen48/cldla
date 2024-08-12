@@ -1,5 +1,5 @@
 process PLINK2_VCF {
-    tag "$meta"
+    tag "$meta.id"
     label 'process_low'
 
     conda "${moduleDir}/environment.yml"
@@ -11,29 +11,25 @@ process PLINK2_VCF {
     tuple val(meta), path(vcf)
 
     output:
-    tuple val(meta), path('*.bed')    , emit: bed
-    tuple val(meta), path('*.bim')    , emit: bim
-    tuple val(meta), path('*.fam'), emit: fam
-    path 'versions.yml'                , emit: versions
+    tuple val(meta), path("*.pgen")    , emit: pgen
+    tuple val(meta), path("*.psam")    , emit: psam
+    tuple val(meta), path("*.pvar")    , emit: pvar
+    tuple val(meta), path("*.pvar.zst"), emit: pvar_zst, optional: true
+    path "versions.yml"                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def mem_mb = task.memory.toMega()
-    def max_chrom = params.num_autosomes
-
     """
     plink2 \\
         --threads $task.cpus \\
         --memory $mem_mb \\
-        --chr-set ${max_chrom} \\
-        --double-id \\
         $args \\
         --vcf $vcf \\
-        --make-bed \\
         --out ${prefix}
 
     cat <<-END_VERSIONS > versions.yml

@@ -327,7 +327,7 @@
     "properties": {
         "multiqc_title": {
             "type": "string",
-            "default": null
+            "default": "None"
         },
         "schema_ignore_params": {
             "type": "string",

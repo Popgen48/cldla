@@ -43,7 +43,7 @@
                 "window_size": {
                     "type": "number",
                     "description": "Window size to carry out cLDLA analysis",
-                    "default": 40.0
+                    "default": 40
                 },
                 "output_prefix": {
                     "type": "string",
@@ -72,7 +72,7 @@
                 },
                 "lrt_threhold": {
                     "type": "number",
-                    "default": 18.0,
+                    "default": 18,
                     "description": "lrt values above which the values are significant"
                 },
                 "tool": {
@@ -289,7 +289,6 @@
                 "tracedir": {
                     "type": "string",
                     "description": "Directory to keep pipeline Nextflow logs and reports.",
-                    "default": "${params.outdir}/pipeline_info",
                     "fa_icon": "fas fa-cogs",
                     "hidden": true
                 },

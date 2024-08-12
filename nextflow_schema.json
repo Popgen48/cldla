@@ -43,7 +43,7 @@
                 "window_size": {
                     "type": "number",
                     "description": "Window size to carry out cLDLA analysis",
-                    "default": 40
+                    "default": 40.0
                 },
                 "output_prefix": {
                     "type": "string",
@@ -72,7 +72,7 @@
                 },
                 "lrt_threhold": {
                     "type": "number",
-                    "default": 18,
+                    "default": 18.0,
                     "description": "lrt values above which the values are significant"
                 },
                 "tool": {
@@ -323,5 +323,19 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "multiqc_title": {
+            "type": "string",
+            "default": null
+        },
+        "schema_ignore_params": {
+            "type": "string",
+            "default": "genomes"
+        },
+        "validationShowHiddenParams": {
+            "type": "string",
+            "default": "false"
+        }
+    }
 }

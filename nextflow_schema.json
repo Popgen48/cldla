@@ -108,7 +108,7 @@
                 },
                 "manhattan_plot_yml": {
                     "type": "string",
-                    "default": "popgen-cldla/manhattanplot.yml"
+                    "default": "popgen-cldla/assets/manhattanplot.yml"
                 },
                 "default_asreml_params": {
                     "type": "string",
@@ -326,16 +326,14 @@
     ],
     "properties": {
         "multiqc_title": {
-            "type": "string",
-            "default": "None"
+            "type": "string"
         },
         "schema_ignore_params": {
             "type": "string",
             "default": "genomes"
         },
         "validationShowHiddenParams": {
-            "type": "string",
-            "default": "false"
+            "type": "boolean"
         }
     }
 }

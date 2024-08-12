@@ -7,12 +7,12 @@
                 "nf-core": {
                     "bcftools/concat": {
                         "branch": "master",
-                        "git_sha": "516189e968feb4ebdd9921806988b4c12b4ac2dc",
+                        "git_sha": "cdf83b18471db290a28fe98c2a0852cb05864890",
                         "installed_by": ["modules"]
                     },
                     "bcftools/view": {
                         "branch": "master",
-                        "git_sha": "cfd937a668919d948f6fcbf4218e79de50c2f36f",
+                        "git_sha": "34ac993e081b32d2170ab790d0386b74122f9d36",
                         "installed_by": ["modules"]
                     },
                     "beagle5/beagle": {

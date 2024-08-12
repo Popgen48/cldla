@@ -20,7 +20,7 @@ process UAR_INVERSE {
 
         diplo=\$(awk -v sc=0 '{if(!(\$1 in pop_id)){pop_id[\$1];sc++}}END{print sc}' ${lgen})
 
-       ${baseDir}/bin/ginverse \${diplo} ${dataset_id}.${chrom}.B.grm ${dataset_id}.${chrom}.giv
+        ${baseDir}/bin/ginverse \${diplo} ${dataset_id}.${chrom}.B.grm ${dataset_id}.${chrom}.giv
 
         """
 }

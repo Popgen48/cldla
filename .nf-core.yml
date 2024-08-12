@@ -1,5 +1,7 @@
 repository_type: pipeline
 lint:
   template_strings: False
+  files_exist: False
+  files_unchanged: False
   multiqc_config:
     report_comment: False

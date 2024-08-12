@@ -1,11 +1,10 @@
-process PYTHON3_CALC_LRT{
-
+process PYTHON3_CALC_LRT_BLUPF90 {
     tag { "${meta.id}" }
-    label "process_medium"
-    publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:"copy")
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    label 'process_medium'
+    publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:'copy')
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'docker://popgen48/cldla:1.0.0' :
-        'popgen48/cldla:1.0.0' }"
+        'popgen48/cldla:1.0.0'}"
     maxForks 1
 
     input:
@@ -28,7 +27,5 @@ process PYTHON3_CALC_LRT{
         """
     python3 ${baseDir}/bin/vcf_to_local_lrt.py -v ${vcf_file} -r ${chrom} -w ${window_size} -c ${task.cpus} -g ${chrom_giv} -p ${pheno_file} -a ${par_file} -t ${tool} -o ${outprefix} -n ${n_perm}
 
-
-        """ 
-
+        """
 }

@@ -11,10 +11,10 @@ process PLINK2_VCF {
     tuple val(meta), path(vcf)
 
     output:
-    tuple val(meta), path("*.bed")    , emit: bed
-    tuple val(meta), path("*.bim")    , emit: bim
-    tuple val(meta), path("*.fam"), emit: fam
-    path "versions.yml"                , emit: versions
+    tuple val(meta), path('*.bed')    , emit: bed
+    tuple val(meta), path('*.bim')    , emit: bim
+    tuple val(meta), path('*.fam'), emit: fam
+    path 'versions.yml'                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

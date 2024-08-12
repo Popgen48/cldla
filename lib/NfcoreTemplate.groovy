@@ -2,8 +2,6 @@
 // This file holds several functions used within the nf-core pipeline template.
 //
 
-import org.yaml.snakeyaml.Yaml
-
 class NfcoreTemplate {
 
     //
@@ -12,9 +10,9 @@ class NfcoreTemplate {
     public static void awsBatch(workflow, params) {
         if (workflow.profile.contains('awsbatch')) {
             // Check params.awsqueue and params.awsregion have been set if running on AWSBatch
-            assert (params.awsqueue && params.awsregion) : "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
+            assert (params.awsqueue && params.awsregion) : 'Specify correct --awsqueue and --awsregion parameters on AWSBatch!'
             // Check outdir paths to be S3 buckets if running on AWSBatch
-            assert params.outdir.startsWith('s3:')       : "Outdir not on S3 - specify S3 Bucket to run on AWSBatch!"
+            assert params.outdir.startsWith('s3:')       : 'Outdir not on S3 - specify S3 Bucket to run on AWSBatch!'
         }
     }
 
@@ -24,11 +22,11 @@ class NfcoreTemplate {
     public static void checkConfigProvided(workflow, log) {
         if (workflow.profile == 'standard' && workflow.configFiles.size() <= 1) {
             log.warn "[$workflow.manifest.name] You are attempting to run the pipeline without any custom configuration!\n\n" +
-                    "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
-                    "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
-                    "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" +
-                    "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" +
-                    "Please refer to the quick start section and usage docs for the pipeline.\n "
+                    'This will be dependent on your local compute environment but can be achieved via one or more of the following:\n' +
+                    '   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n' +
+                    '   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n' +
+                    '   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n' +
+                    'Please refer to the quick start section and usage docs for the pipeline.\n '
         }
     }
 
@@ -36,7 +34,7 @@ class NfcoreTemplate {
     // Generate version string
     //
     public static String version(workflow) {
-        String version_string = ""
+        String version_string = ''
 
         if (workflow.manifest.version) {
             def prefix_v = workflow.manifest.version[0] != 'v' ? 'v' : ''
@@ -55,7 +53,6 @@ class NfcoreTemplate {
     // Construct and send completion email
     //
     public static void email(workflow, params, summary_params, projectDir, log, multiqc_report=[]) {
-
         // Set up the e-mail variables
         def subject = "[$workflow.manifest.name] Successful: $workflow.runName"
         if (!workflow.success) {
@@ -145,7 +142,7 @@ class NfcoreTemplate {
             } catch (all) {
                 // Catch failures and try with plaintext
                 def mail_cmd = [ 'mail', '-s', subject, '--content-type=text/html', email_address ]
-                if ( mqc_report.size() <= max_multiqc_email_size.toBytes() ) {
+                if (mqc_report.size() <= max_multiqc_email_size.toBytes()) {
                     mail_cmd += [ '-A', mqc_report ]
                 }
                 mail_cmd.execute() << email_html
@@ -158,9 +155,9 @@ class NfcoreTemplate {
         if (!output_d.exists()) {
             output_d.mkdirs()
         }
-        def output_hf = new File(output_d, "pipeline_report.html")
+        def output_hf = new File(output_d, 'pipeline_report.html')
         output_hf.withWriter { w -> w << email_html }
-        def output_tf = new File(output_d, "pipeline_report.txt")
+        def output_tf = new File(output_d, 'pipeline_report.txt')
         output_tf.withWriter { w -> w << email_txt }
     }
 
@@ -197,7 +194,7 @@ class NfcoreTemplate {
         msg_fields['exitStatus']   = workflow.exitStatus
         msg_fields['errorMessage'] = (workflow.errorMessage ?: 'None')
         msg_fields['errorReport']  = (workflow.errorReport ?: 'None')
-        msg_fields['commandLine']  = workflow.commandLine.replaceFirst(/ +--hook_url +[^ ]+/, "")
+        msg_fields['commandLine']  = workflow.commandLine.replaceFirst(/ +--hook_url +[^ ]+/, '')
         msg_fields['projectDir']   = workflow.projectDir
         msg_fields['summary']      = summary << misc_fields
 
@@ -205,20 +202,20 @@ class NfcoreTemplate {
         def engine       = new groovy.text.GStringTemplateEngine()
         // Different JSON depending on the service provider
         // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
-        def json_path     = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
+        def json_path     = hook_url.contains('hooks.slack.com') ? 'slackreport.json' : 'adaptivecard.json'
         def hf            = new File("$projectDir/assets/${json_path}")
         def json_template = engine.createTemplate(hf).make(msg_fields)
         def json_message  = json_template.toString()
 
         // POST
-        def post = new URL(hook_url).openConnection();
-        post.setRequestMethod("POST")
+        def post = new URL(hook_url).openConnection()
+        post.setRequestMethod('POST')
         post.setDoOutput(true)
-        post.setRequestProperty("Content-Type", "application/json")
-        post.getOutputStream().write(json_message.getBytes("UTF-8"));
-        def postRC = post.getResponseCode();
+        post.setRequestProperty('Content-Type', 'application/json')
+        post.getOutputStream().write(json_message.getBytes('UTF-8'))
+        def postRC = post.getResponseCode()
         if (! postRC.equals(200)) {
-            log.warn(post.getErrorStream().getText());
+            log.warn(post.getErrorStream().getText())
         }
     }
 
@@ -321,7 +318,7 @@ class NfcoreTemplate {
         Map colors = logColours(monochrome_logs)
         String workflow_version = NfcoreTemplate.version(workflow)
         String.format(
-            """\n
+            '''\n
             ${dashedLine(monochrome_logs)}
                                                     ${colors.green},--.${colors.black}/${colors.green},-.${colors.reset}
             ${colors.blue}        ___     __   __   __   ___     ${colors.green}/,-._.--~\'${colors.reset}
@@ -330,7 +327,8 @@ class NfcoreTemplate {
                                                     ${colors.green}`._,._,\'${colors.reset}
             ${colors.purple}  ${workflow.manifest.name} ${workflow_version}${colors.reset}
             ${dashedLine(monochrome_logs)}
-            """.stripIndent()
+            '''.stripIndent()
         )
     }
+
 }

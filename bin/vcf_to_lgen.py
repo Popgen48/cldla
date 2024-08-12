@@ -2,6 +2,7 @@
 import sys
 import pysam
 
+
 def pheno_to_list(pheno_file):
     indi_list = []
     header = True
@@ -13,6 +14,7 @@ def pheno_to_list(pheno_file):
                 line = line.rstrip().split()
                 indi_list.append(line[1])
     return indi_list
+
 
 def read_vcf(vcf_path, chrm, indi_list):
     # dictionary to store samples

@@ -2,9 +2,9 @@ process BCFTOOLS_VIEW {
     tag "$meta"
     label 'process_medium'
 
-    conda "bioconda::bcftools=1.17"
+    conda 'bioconda::bcftools=1.17'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bcftools:1.17--haef29d1_0':
+        'https://depot.galaxyproject.org/singularity/bcftools:1.17--haef29d1_0' :
         'biocontainers/bcftools:1.17--haef29d1_0' }"
 
     input:
@@ -14,8 +14,8 @@ process BCFTOOLS_VIEW {
     path(samples)
 
     output:
-    tuple val(meta), path("*.gz") , emit: vcf
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path('*.gz') , emit: vcf
+    path 'versions.yml'           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -23,9 +23,9 @@ process BCFTOOLS_VIEW {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta}"
-    def regions_file  = regions ? "--regions-file ${regions}" : ""
-    def targets_file = targets ? "--targets-file ${targets}" : ""
-    def samples_file =  samples ? "--samples-file ${samples}" : ""
+    def regions_file  = regions ? "--regions-file ${regions}" : ''
+    def targets_file = targets ? "--targets-file ${targets}" : ''
+    def samples_file =  samples ? "--samples-file ${samples}" : ''
     """
     bcftools view \\
         --output ${prefix}.vcf.gz \\

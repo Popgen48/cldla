@@ -2,79 +2,77 @@ include { BEAGLE5_BEAGLE                  } from '../../modules/nf-core/beagle5/
 include { SHAPEIT5_PHASECOMMON            } from '../../modules/nf-core/shapeit5/phasecommon/main'
 include { TABIX_TABIX as TABIX_PHASED_VCF } from '../../modules/nf-core/tabix/tabix/main'
 
-workflow PHASE_GENOTYPES{
+workflow PHASE_GENOTYPES {
     take:
         meta_vcf_idx
     main:
         //check if phasing_panel csv file path is set
-        if( params.phasing_panel ){
+        if (params.phasing_panel) {
         Channel
-                .fromPath( params.phasing_panel )
-                .splitCsv(sep:",")
-                .map{ i_chrom, i_vcf, i_idx -> if(!file(i_vcf).exists() || !(file(i_idx).exists())){ exit 1, 'ERROR: reference vcf file or its index does not exists-> ${i_vcf}' }else{tuple([id:i_chrom], file(i_vcf), file(i_idx))} }
-                .set{ i_chrom_vcf_idx }
-            meta_vcf_idx_pvcf_idx = meta_vcf_idx.combine(i_chrom_vcf_idx,by:0)        
+                .fromPath(params.phasing_panel)
+                .splitCsv(sep:',')
+                .map { i_chrom, i_vcf, i_idx -> if (!file(i_vcf).exists() || !(file(i_idx).exists())) { exit 1, 'ERROR: reference vcf file or its index does not exists-> ${ i_vcf }' }else { tuple([id:i_chrom], file(i_vcf), file(i_idx)) } }
+                .set { i_chrom_vcf_idx }
+            meta_vcf_idx_pvcf_idx = meta_vcf_idx.combine(i_chrom_vcf_idx,by:0)
         }
-        else{
+        else {
             meta_vcf_idx_pvcf_idx = meta_vcf_idx.combine([null]).combine([null])
         }
         //check if recombination map csv file path is set
-        if( params.phasing_map ){
+        if (params.phasing_map) {
             Channel
                 .fromPath(params.phasing_map)
-                .splitCsv(sep:",")
-                .map{ i_chrom, i_map -> if(!file(i_map).exists() ){ exit 1, 'ERROR: recombination map file does not exist -> ${i_map}' }else{tuple([id:i_chrom], file(i_map))}}
-                .set{ i_chrom_map }
+                .splitCsv(sep:',')
+                .map { i_chrom, i_map -> if (!file(i_map).exists()) { exit 1, 'ERROR: recombination map file does not exist -> ${ i_map }' }else { tuple([id:i_chrom], file(i_map)) } }
+                .set { i_chrom_map }
             meta_vcf_idx_pvcf_idx_recomb = meta_vcf_idx_pvcf_idx.combine(i_chrom_map, by:0)
         }
-        else{
+        else {
             meta_vcf_idx_pvcf_idx_recomb = meta_vcf_idx_pvcf_idx.combine([null])
         }
-        if (params.phasing_tool == "beagle5"){
+        if (params.phasing_tool == 'beagle5') {
             //prepare input channel for beagle5
-            beagle_input = meta_vcf_idx_pvcf_idx_recomb.multiMap{meta, vcf, idx, pvcf, pvcf_idx, recomb -> 
-                    meta_vcf:[meta,vcf]
-                    pvcf: pvcf
-                    recomb:recomb
+            beagle_input = meta_vcf_idx_pvcf_idx_recomb.multiMap { meta, vcf, idx, pvcf, pvcf_idx, recomb ->
+            meta_vcf:[meta, vcf]
+            pvcf: pvcf
+            recomb:recomb
             }
             //
             //MODULE : BEAGLE5_BEAGLE
             //
             BEAGLE5_BEAGLE(
                 beagle_input.meta_vcf,
-                params.phasing_panel? beagle_input.pvcf:[],
-                params.phasing_map? beagle_input.recomb:[],
+                params.phasing_panel ? beagle_input.pvcf : [],
+                params.phasing_map ? beagle_input.recomb : [],
                 [],
                 []
             )
         }
-        else{
-            shapeit5_input = meta_vcf_idx_pvcf_idx_recomb.multiMap{ meta, vcf, idx, pvcf, pvcf_idx, recomb ->
-                meta_vcf_idx_pedigee_region: [meta, vcf, idx, null, meta.id]
-                meta_ref_idx:[meta, pvcf, pvcf_idx]
-                meta_recomb:[meta, recomb]
+        else {
+            shapeit5_input = meta_vcf_idx_pvcf_idx_recomb.multiMap { meta, vcf, idx, pvcf, pvcf_idx, recomb ->
+            meta_vcf_idx_pedigee_region: [meta, vcf, idx, null, meta.id]
+            meta_ref_idx:[meta, pvcf, pvcf_idx]
+            meta_recomb:[meta, recomb]
             }
             //
             //MODULE: SHAPEIT5_PHASECOMMON
             //
             SHAPEIT5_PHASECOMMON(
-                shapeit5_input.meta_vcf_idx_pedigee_region.map{meta, vcf, idx, ped, region->tuple(meta, vcf, idx,ped?:[], region)},
-                shapeit5_input.meta_ref_idx.map{meta, pvcf, pvcf_idx->tuple(meta?:[], pvcf?:[], pvcf_idx?:[])},
-                [[],[],[]],
-                shapeit5_input.meta_recomb.map{meta, recomb->tuple(meta?:[], recomb?:[])}
+                shapeit5_input.meta_vcf_idx_pedigee_region.map { meta, vcf, idx, ped, region->tuple(meta, vcf, idx, ped ?: [], region) },
+                shapeit5_input.meta_ref_idx.map { meta, pvcf, pvcf_idx->tuple(meta ?: [], pvcf ?: [], pvcf_idx ?: []) },
+                [[], [], []],
+                shapeit5_input.meta_recomb.map { meta, recomb->tuple(meta ?: [], recomb ?: []) }
             )
         }
         //
         //MODULE: TABIX_PHASED_VCF
         //
         TABIX_PHASED_VCF(
-            params.beagle5 ? BEAGLE5_BEAGLE.out.vcf: SHAPEIT5_PHASECOMMON.out.phased_variant
+            params.beagle5 ? BEAGLE5_BEAGLE.out.vcf : SHAPEIT5_PHASECOMMON.out.phased_variant
         )
-        
-        n1_meta_vcf_idx_map = params.phasing_tool == "beagle5" ? BEAGLE5_BEAGLE.out.vcf.join(TABIX_PHASED_VCF.out.tbi) : SHAPEIT5_PHASECOMMON.out.phased_variant.join(TABIX_PHASED_VCF.out.tbi)
 
+        n1_meta_vcf_idx_map = params.phasing_tool == 'beagle5' ? BEAGLE5_BEAGLE.out.vcf.join(TABIX_PHASED_VCF.out.tbi) : SHAPEIT5_PHASECOMMON.out.phased_variant.join(TABIX_PHASED_VCF.out.tbi)
 
         emit:
             n1_meta_vcf_idx = n1_meta_vcf_idx
-
 }

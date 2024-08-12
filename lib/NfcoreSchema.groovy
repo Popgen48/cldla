@@ -31,7 +31,7 @@ class NfcoreSchema {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
         // Check for nextflow core params and unexpected params
         def json = new File(getSchemaPath(workflow, schema_filename=schema_filename)).text
-        def Map schemaParams = (Map) new JsonSlurper().parseText(json).get('definitions')
+        Map schemaParams = (Map) new JsonSlurper().parseText(json).get('definitions')
         def nf_params = [
             // Options for base `nextflow` command
             'bg',
@@ -124,13 +124,13 @@ class NfcoreSchema {
             }
             // unexpected params
             def params_ignore = params.schema_ignore_params.split(',') + 'schema_ignore_params'
-            def expectedParamsLowerCase = expectedParams.collect{ it.replace("-", "").toLowerCase() }
-            def specifiedParamLowerCase = specifiedParam.replace("-", "").toLowerCase()
-            def isCamelCaseBug = (specifiedParam.contains("-") && !expectedParams.contains(specifiedParam) && expectedParamsLowerCase.contains(specifiedParamLowerCase))
+            def expectedParamsLowerCase = expectedParams.collect { it.replace('-', '').toLowerCase() }
+            def specifiedParamLowerCase = specifiedParam.replace('-', '').toLowerCase()
+            def isCamelCaseBug = (specifiedParam.contains('-') && !expectedParams.contains(specifiedParam) && expectedParamsLowerCase.contains(specifiedParamLowerCase))
             if (!expectedParams.contains(specifiedParam) && !params_ignore.contains(specifiedParam) && !isCamelCaseBug) {
                 // Temporarily remove camelCase/camel-case params #1035
-                def unexpectedParamsLowerCase = unexpectedParams.collect{ it.replace("-", "").toLowerCase()}
-                if (!unexpectedParamsLowerCase.contains(specifiedParamLowerCase)){
+                def unexpectedParamsLowerCase = unexpectedParams.collect { it.replace('-', '').toLowerCase() }
+                if (!unexpectedParamsLowerCase.contains(specifiedParamLowerCase)) {
                     unexpectedParams.push(specifiedParam)
                 }
             }
@@ -171,7 +171,7 @@ class NfcoreSchema {
             println ''
             def warn_msg = 'Found unexpected parameters:'
             for (unexpectedParam in unexpectedParams) {
-                warn_msg = warn_msg + "\n* --${unexpectedParam}: ${params[unexpectedParam].toString()}"
+                warn_msg = warn_msg + "\n* --${unexpectedParam}: ${params[unexpectedParam]}"
             }
             log.warn warn_msg
             log.info "- ${colors.dim}Ignore this warning: params.schema_ignore_params = \"${unexpectedParams.join(',')}\" ${colors.reset}"
@@ -203,37 +203,37 @@ class NfcoreSchema {
             for (param in group_params.keySet()) {
                 if (group_params.get(param).hidden && !params.show_hidden_params) {
                     num_hidden += 1
-                    continue;
+                    continue
                 }
                 def type = '[' + group_params.get(param).type + ']'
                 def description = group_params.get(param).description
-                def defaultValue = group_params.get(param).default != null ? " [default: " + group_params.get(param).default.toString() + "]" : ''
+                def defaultValue = group_params.get(param).default != null ? ' [default: ' + group_params.get(param).default + ']' : ''
                 def description_default = description + colors.dim + defaultValue + colors.reset
                 // Wrap long description texts
                 // Loosely based on https://dzone.com/articles/groovy-plain-text-word-wrap
-                if (description_default.length() > dec_linewidth){
+                if (description_default.length() > dec_linewidth) {
                     List olines = []
-                    String oline = "" // " " * indent
-                    description_default.split(" ").each() { wrd ->
+                    String oline = '' // " " * indent
+                    description_default.split(' ').each { wrd ->
                         if ((oline.size() + wrd.size()) <= dec_linewidth) {
-                            oline += wrd + " "
+                            oline += wrd + ' '
                         } else {
                             olines += oline
-                            oline = wrd + " "
+                            oline = wrd + ' '
                         }
                     }
                     olines += oline
-                    description_default = olines.join("\n" + " " * desc_indent)
+                    description_default = olines.join('\n' + ' ' * desc_indent)
                 }
-                group_output += "  --" +  param.padRight(max_chars) + colors.dim + type.padRight(10) + colors.reset + description_default + '\n'
+                group_output += '  --' +  param.padRight(max_chars) + colors.dim + type.padRight(10) + colors.reset + description_default + '\n'
                 num_params += 1
             }
             group_output += '\n'
-            if (num_params > 0){
+            if (num_params > 0) {
                 output += group_output
             }
         }
-        if (num_hidden > 0){
+        if (num_hidden > 0) {
             output += colors.dim + "!! Hiding $num_hidden params, use --show_hidden_params to show them !!\n" + colors.reset
         }
         output += NfcoreTemplate.dashedLine(params.monochrome_logs)
@@ -245,7 +245,7 @@ class NfcoreSchema {
     //
     public static LinkedHashMap paramsSummaryMap(workflow, params, schema_filename='nextflow_schema.json') {
         // Get a selection of core Nextflow workflow options
-        def Map workflow_summary = [:]
+        Map workflow_summary = [:]
         if (workflow.revision) {
             workflow_summary['revision'] = workflow.revision
         }
@@ -264,7 +264,7 @@ class NfcoreSchema {
         workflow_summary['configFiles']  = workflow.configFiles.join(', ')
 
         // Get pipeline parameters defined in JSON Schema
-        def Map params_summary = [:]
+        Map params_summary = [:]
         def params_map = paramsLoad(getSchemaPath(workflow, schema_filename=schema_filename))
         for (group in params_map.keySet()) {
             def sub_params = new LinkedHashMap()
@@ -298,7 +298,7 @@ class NfcoreSchema {
                         sub_params.put(param, params_value)
                     }
                     // No default in the schema, and this isn't empty
-                    else if (schema_value == null && params_value != "" && params_value != null && params_value != false) {
+                    else if (schema_value == null && params_value != '' && params_value != null && params_value != false) {
                         sub_params.put(param, params_value)
                     }
                 }
@@ -321,12 +321,12 @@ class NfcoreSchema {
             if (group_params) {
                 output += colors.bold + group + colors.reset + '\n'
                 for (param in group_params.keySet()) {
-                    output += "  " + colors.blue + param.padRight(max_chars) + ": " + colors.green +  group_params.get(param) + colors.reset + '\n'
+                    output += '  ' + colors.blue + param.padRight(max_chars) + ': ' + colors.green +  group_params.get(param) + colors.reset + '\n'
                 }
                 output += '\n'
             }
         }
-        output += "!! Only displaying parameters that differ from the pipeline defaults !!\n"
+        output += '!! Only displaying parameters that differ from the pipeline defaults !!\n'
         output += NfcoreTemplate.dashedLine(params.monochrome_logs)
         return output
     }
@@ -373,7 +373,7 @@ class NfcoreSchema {
     private static JSONArray removeElement(json_array, element) {
         def list = []
         int len = json_array.length()
-        for (int i=0;i<len;i++){
+        for (int i = 0; i < len; i++) {
             list.add(json_array.get(i).toString())
         }
         list.remove(element)
@@ -386,28 +386,28 @@ class NfcoreSchema {
     //
     private static JSONObject removeIgnoredParams(raw_schema, params) {
         // Remove anything that's in params.schema_ignore_params
-        params.schema_ignore_params.split(',').each{ ignore_param ->
-            if(raw_schema.keySet().contains('definitions')){
+        params.schema_ignore_params.split(',').each { ignore_param ->
+            if (raw_schema.keySet().contains('definitions')) {
                 raw_schema.definitions.each { definition ->
-                    for (key in definition.keySet()){
-                        if (definition[key].get("properties").keySet().contains(ignore_param)){
+                    for (key in definition.keySet()) {
+                        if (definition[key].get('properties').keySet().contains(ignore_param)) {
                             // Remove the param to ignore
-                            definition[key].get("properties").remove(ignore_param)
+                            definition[key].get('properties').remove(ignore_param)
                             // If the param was required, change this
-                            if (definition[key].has("required")) {
+                            if (definition[key].has('required')) {
                                 def cleaned_required = removeElement(definition[key].required, ignore_param)
-                                definition[key].put("required", cleaned_required)
+                                definition[key].put('required', cleaned_required)
                             }
                         }
                     }
                 }
             }
-            if(raw_schema.keySet().contains('properties') && raw_schema.get('properties').keySet().contains(ignore_param)) {
-                raw_schema.get("properties").remove(ignore_param)
+            if (raw_schema.keySet().contains('properties') && raw_schema.get('properties').keySet().contains(ignore_param)) {
+                raw_schema.get('properties').remove(ignore_param)
             }
-            if(raw_schema.keySet().contains('required') && raw_schema.required.contains(ignore_param)) {
+            if (raw_schema.keySet().contains('required') && raw_schema.required.contains(ignore_param)) {
                 def cleaned_required = removeElement(raw_schema.required, ignore_param)
-                raw_schema.put("required", cleaned_required)
+                raw_schema.put('required', cleaned_required)
             }
         }
         return raw_schema
@@ -429,7 +429,7 @@ class NfcoreSchema {
             }
             // Cast Duration to String
             if (p['value'].getClass() == nextflow.util.Duration) {
-                new_params.replace(p.key, p['value'].toString().replaceFirst(/d(?!\S)/, "day"))
+                new_params.replace(p.key, p['value'].toString().replaceFirst(/d(?!\S)/, 'day'))
             }
             // Cast LinkedHashMap to String
             if (p['value'].getClass() == LinkedHashMap) {
@@ -463,8 +463,8 @@ class NfcoreSchema {
     //    -
     private static LinkedHashMap paramsRead(String json_schema) throws Exception {
         def json = new File(json_schema).text
-        def Map schema_definitions = (Map) new JsonSlurper().parseText(json).get('definitions')
-        def Map schema_properties = (Map) new JsonSlurper().parseText(json).get('properties')
+        Map schema_definitions = (Map) new JsonSlurper().parseText(json).get('definitions')
+        Map schema_properties = (Map) new JsonSlurper().parseText(json).get('properties')
         /* Tree looks like this in nf-core schema
         * definitions <- this is what the first get('definitions') gets us
                 group 1
@@ -507,7 +507,7 @@ class NfcoreSchema {
         schema_properties.each { innerkey, value ->
             ungrouped_params.put(innerkey, value)
         }
-        params_map.put("Other parameters", ungrouped_params)
+        params_map.put('Other parameters', ungrouped_params)
 
         return params_map
     }
@@ -527,4 +527,5 @@ class NfcoreSchema {
         }
         return max_chars
     }
+
 }

@@ -1,18 +1,16 @@
-process PLOT_H2_HISTOGRAM{
-
-    tag { "reml grm" }
-    label "process_medium"
-    container "popgen48/cldla_python_r_packages:1.0.0"
-    publishDir("${params.outdir}/gcta/heritability_output/", mode:"copy")
+process PLOT_H2_HISTOGRAM {
+    tag { 'reml grm' }
+    label 'process_medium'
+    container 'popgen48/cldla_python_r_packages:1.0.0'
+    publishDir("${params.outdir}/gcta/heritability_output/", mode:'copy')
 
     input:
         path(h2_ori)
         path(h2_sim)
 
     output:
-        path ("*.{html,txt}")
-        
-    
+        path('*.{html,txt}')
+
     script:
 
         output_prefix = params.output_prefix
@@ -24,5 +22,5 @@ process PLOT_H2_HISTOGRAM{
 
         python3 ${baseDir}/bin/plot_histogram.py simulated_h2.txt observed_h2.txt ${output_prefix}
 
-        """ 
+        """
 }

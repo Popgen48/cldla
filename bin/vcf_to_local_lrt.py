@@ -17,13 +17,13 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 asreml_path = distutils.spawn.find_executable("asreml")
 cldla_snp = distutils.spawn.find_executable("cldla_snp")
-cldla_snp = cldla_snp if cldla_snp else f'{dname}/cldla_snp'
+cldla_snp = cldla_snp if cldla_snp else f"{dname}/cldla_snp"
 bend = distutils.spawn.find_executable("bend")
-bend = bend if bend else f'{dname}/bend'
-ginverse= distutils.spawn.find_executable("ginverse")
-ginverse = ginverse if ginverse else f'{dname}/ginverse'
-blupf90= distutils.spawn.find_executable("blupf90+")
-blupf90 = blupf90 if blupf90 else f'{dname}/blupf90+'
+bend = bend if bend else f"{dname}/bend"
+ginverse = distutils.spawn.find_executable("ginverse")
+ginverse = ginverse if ginverse else f"{dname}/ginverse"
+blupf90 = distutils.spawn.find_executable("blupf90+")
+blupf90 = blupf90 if blupf90 else f"{dname}/blupf90+"
 
 
 g_list_geno_dict = [{}]
@@ -97,7 +97,7 @@ class AsremlMethods:
         self.prepare_params(params_file, diplo, grm, phe, model)
         self.prepare_new_dat_file(phe)
         command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
-        subprocess.call([command], shell=True, executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         log_l = self.extract_logl(f"{prefix}.asr")
         return log_l
 
@@ -105,7 +105,7 @@ class AsremlMethods:
         u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
-        subprocess.call([command], shell=True, executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         h1_logl = self.extract_logl(f"{prefix}.asr")
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, -2 * (h0_logl - h1_logl)
@@ -155,7 +155,7 @@ class AsremlMethods:
         log_l_dict = {}
         for k, v in suffix_dict.items():
             command = f"{asreml_path} -NS5 {v} && rm {prefix}.{k}.perm{self.rm_file_pattern}"
-            subprocess.call([command], shell=True, executable='/bin/bash')
+            subprocess.call([command], shell=True, executable="/bin/bash")
             log_l_dict[k] = self.extract_logl(f"{prefix}.{k}.perm.asr")
         return -2 * (log_l_dict["h0"] - log_l_dict["h1"]) if "na" not in log_l_dict.values() else None
 
@@ -271,7 +271,7 @@ class Blupf90Methods:
         self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
         command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params {grm} {prefix}/ && cd {prefix} && {blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
-        subprocess.call([command], shell=True,executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         log_l = self.extract_logl(f"{prefix}.log", True)
         return log_l
 
@@ -309,20 +309,20 @@ class Blupf90Methods:
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
         command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
-        subprocess.call([command], shell=True, executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         h1_logl = self.extract_logl(f"{prefix}.log", True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
     def vce_permutation_h0(self, prefix, grm):
         command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && {blupf90} {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
-        subprocess.call([command], shell=True,executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         h0_logl = self.extract_logl(f"{prefix}.h0.perm.log", False)
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
         command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && {blupf90} {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
-        subprocess.call([command], shell=True,executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
         h1_logl = self.extract_logl(f"{prefix}.h1.perm.log", False)
         return h1_logl
 
@@ -510,7 +510,7 @@ class VcfToLrt:
                 f"{prefix},{output_dir}/{grm},{output_dir}/{pheno_file},{output_dir}/{prefix}.{param_ext}"
             )  # write the window record for H0 hypothesis
             cp_command = f"cp {prefix}.{{giv,{param_ext}}} {pheno_file} {output_dir}/ "
-            subprocess.call([cp_command], shell=True,executable='/bin/bash')
+            subprocess.call([cp_command], shell=True, executable="/bin/bash")
         # Iterate through VCF records
         for i, record in enumerate(vcf):
             last_ele = -1
@@ -677,14 +677,14 @@ class VcfToLrt:
                 else:
                     dest.write(f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n")
                     cp_command = f"cp {v}.{{giv,{param_ext},dat}} {output_dir}/"
-                    subprocess.call([cp_command], shell=True,executable='/bin/bash')
+                    subprocess.call([cp_command], shell=True, executable="/bin/bash")
                     rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
-                    subprocess.call([rm_command], shell=True,executable='/bin/bash')
+                    subprocess.call([rm_command], shell=True, executable="/bin/bash")
             else:
                 rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
-                subprocess.call([rm_command], shell=True,executable='/bin/bash')
+                subprocess.call([rm_command], shell=True, executable="/bin/bash")
         rm_command = f"rm *.perm.*"
-        subprocess.call([rm_command], shell=True,executable='/bin/bash')
+        subprocess.call([rm_command], shell=True, executable="/bin/bash")
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -720,12 +720,12 @@ class VcfToLrt:
 
         command = (
             f"{cldla_snp} {prefix} && {bend} {prefix}.grm {prefix}.B.grm && {ginverse} {max_d} {prefix}.B.grm {prefix}.giv"
-            #+ "&& rm "
-            #+ prefix
-            #+ ".{Hap,Map,par,grm,B.grm}"
+            # + "&& rm "
+            # + prefix
+            # + ".{Hap,Map,par,grm,B.grm}"
         )
 
-        subprocess.call([command], shell=True, executable='/bin/bash')
+        subprocess.call([command], shell=True, executable="/bin/bash")
 
         print(f"Generated .dat and .giv for {window_number}")
 

@@ -39,7 +39,7 @@ include { CLDLA } from './workflows/cldla'
 // WORKFLOW: Run main nf-core/cldla analysis pipeline
 //
 workflow NFCORE_CLDLA {
-    CLDLA ()
+    CLDLA()
 }
 
 /*
@@ -53,7 +53,7 @@ workflow NFCORE_CLDLA {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    NFCORE_CLDLA ()
+    NFCORE_CLDLA()
 }
 
 /*

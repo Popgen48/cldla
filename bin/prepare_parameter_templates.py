@@ -7,7 +7,7 @@ outprefix = sys.argv[4]
 
 extra_params_line = ""
 
-dest = open(outprefix+"_updated.phe","w")
+dest = open(outprefix + "_updated.phe", "w")
 
 if tool != "asreml" and tool != "blupf90":
     print(f"the tool name should either be asreml or blupf90, provided tool {tool}")
@@ -25,29 +25,28 @@ with open(pheno_file) as source:
                 )
                 sys.exit(1)
             else:
-                no_fixed_effect = True if len(line)==3 and tool == "blupf90" else False
+                no_fixed_effect = True if len(line) == 3 and tool == "blupf90" else False
                 if no_fixed_effect:
-                    line.insert(2,"fix_intrp")
+                    line.insert(2, "fix_intrp")
                 header_info = {k: [] for k in line}
                 header_keys = list(header_info.keys())
             header = False
         else:
             if no_fixed_effect:
-                line.insert(2,"1")
+                line.insert(2, "1")
             for i, v in enumerate(line):
-                if v not in header_info[header_keys[i]]:#to count the level of effects, the level should be unique
+                if v not in header_info[header_keys[i]]:  # to count the level of effects, the level should be unique
                     header_info[header_keys[i]].append(v)
         dest.write(f'{" ".join(line)}\n')
 dest.close()
 
-#decide whether the fixed effect is "covariate" or "crossclassified", simple logic is--> "." is present then "covariate" otherwise "cross"
+# decide whether the fixed effect is "covariate" or "crossclassified", simple logic is--> "." is present then "covariate" otherwise "cross"
 
 type_effect = {}
-for i,v in enumerate(header_keys):
+for i, v in enumerate(header_keys):
     header_values = header_info[v]
     header_cov_info = [True if "." in v else False for v in header_values]
     type_effect[v] = "cov" if True in header_cov_info else "cross"
-    
 
 
 ext = "as" if tool == "asreml" else "params"
@@ -77,6 +76,8 @@ else:
     )
     for i, v in enumerate(header_keys):
         if i != 1 and i != len(header_keys) - 1:
-            dest.write(f'{i+1} {len(header_info[v] if type_effect[v] == "cross" else "1")} {"cross" if i==0 else type_effect[v]}\n')
+            dest.write(
+                f'{i+1} {len(header_info[v] if type_effect[v] == "cross" else "1")} {"cross" if i==0 else type_effect[v]}\n'
+            )
     if extra_params_line != "":
         dest.write(f"{extra_params_line}")

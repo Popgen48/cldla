@@ -4,7 +4,7 @@ process SHAPEIT5_PHASECOMMON {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/shapeit5:1.0.0--h0c8ee15_0':
+        'https://depot.galaxyproject.org/singularity/shapeit5:1.0.0--h0c8ee15_0' :
         'biocontainers/shapeit5:1.0.0--h0c8ee15_0'}"
 
     input:
@@ -14,8 +14,8 @@ process SHAPEIT5_PHASECOMMON {
         tuple val(meta4), path(map)
 
     output:
-        tuple val(meta), path("*.{vcf,bcf,vcf.gz,bcf.gz}"), emit: phased_variant
-        path "versions.yml"                               , emit: versions
+        tuple val(meta), path('*.{vcf,bcf,vcf.gz,bcf.gz}'), emit: phased_variant
+        path 'versions.yml'                               , emit: versions
 
     when:
         task.ext.when == null || task.ext.when
@@ -23,14 +23,14 @@ process SHAPEIT5_PHASECOMMON {
     script:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def suffix = task.ext.suffix ?: "vcf.gz"
+    def suffix = task.ext.suffix ?: 'vcf.gz'
 
-    if ("$input" == "${prefix}.${suffix}") error "Input and output names are the same, set prefix in module configuration to disambiguate!"
+    if ("$input" == "${prefix}.${suffix}") error 'Input and output names are the same, set prefix in module configuration to disambiguate!'
 
-    def map_command       = map       ? "--map $map"             : ""
-    def reference_command = reference ? "--reference $reference" : ""
-    def scaffold_command  = scaffold  ? "--scaffold $scaffold"   : ""
-    def pedigree_command  = pedigree  ? "--pedigree $pedigree"   : ""
+    def map_command       = map       ? "--map $map"             : ''
+    def reference_command = reference ? "--reference $reference" : ''
+    def scaffold_command  = scaffold  ? "--scaffold $scaffold"   : ''
+    def pedigree_command  = pedigree  ? "--pedigree $pedigree"   : ''
 
     """
     SHAPEIT5_phase_common \\
@@ -53,7 +53,7 @@ process SHAPEIT5_PHASECOMMON {
     stub:
     def args   = task.ext.args   ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def suffix = task.ext.suffix ?: "vcf.gz"
+    def suffix = task.ext.suffix ?: 'vcf.gz'
     """
     touch ${prefix}.${suffix}
 

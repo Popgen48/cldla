@@ -1,14 +1,14 @@
 process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_single'
-    container "popgen48/cldla_python_r_packages:1.0.0"
+    container 'popgen48/cldla_python_r_packages:1.0.0'
 
     input:
     path samplesheet
 
     output:
     path '*.csv'       , emit: csv
-    path "versions.yml", emit: versions
+    path 'versions.yml', emit: versions
 
     when:
     task.ext.when == null || task.ext.when

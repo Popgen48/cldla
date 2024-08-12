@@ -4,15 +4,15 @@ process BCFTOOLS_CONCAT {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bcftools:1.17--haef29d1_0':
+        'https://depot.galaxyproject.org/singularity/bcftools:1.17--haef29d1_0' :
         'biocontainers/bcftools:1.17--haef29d1_0' }"
 
     input:
     tuple val(meta), path(vcfs), path(tbi)
 
     output:
-    tuple val(meta), path("*.gz"), emit: vcf
-    path  "versions.yml"         , emit: versions
+    tuple val(meta), path('*.gz'), emit: vcf
+    path  'versions.yml'         , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

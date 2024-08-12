@@ -55,7 +55,7 @@ Example commands to run the workflow
 
 ..  code-block:: Bash
 
-	nextflow run popgen-cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe --par_file TailMLS04.template.b.config -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
+	nextflow run popgen-cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
 
 **To estimate heritability using the approach as implemented in GCTA**
 

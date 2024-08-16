@@ -24,7 +24,7 @@ class InteractiveManhattanplot:
         # self.min_score = 0  # important to set the min cordi of y axis
         # self.max_score = 0  # important to set the maxi cordi of y axis
         self.y_label = y_label  # label will determine the hovering points, has to be one of the string present in self.upper_hover or tajimas_d
-        self.upper_hover = ["fst_values", "LRT_values"]
+        self.upper_hover = ["fst_values", "LRT_values", "-2log10_P"]
         self.axis_chrom_dict = (
             {}
         )  # dictionary with greatest coordinates of a respective chromosome as key and chromosome its value --> use to replace major X-axis with chromosome name
@@ -219,5 +219,7 @@ class InteractiveManhattanplot:
 
 
 if __name__ == "__main__":
-    obk = InteractiveManhattanplot(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    obk = InteractiveManhattanplot(
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+    )
     obk.main_func()

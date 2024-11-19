@@ -83,7 +83,7 @@
             "default": 0.005
         },
         "lrt_threhold": {
-            "type": "integer",
+            "type": "number",
             "default": 18
         },
         "include_chrom": {

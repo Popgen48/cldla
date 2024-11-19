@@ -18,7 +18,7 @@ with open(out_df + ".chisq_2log10Pval.maninp.txt", "w") as dest1:
         with open(in_df) as source:
             for line in source:
                 line = line.rstrip().split()
-                p_val = round(float(chi2.sf(float(line[2]), 1)),8)
+                p_val = round(float(chi2.sf(float(line[2]), 1)), 8)
                 dest.write(f"{line[0]} {line[1]} {line[2]} {p_val}\n")
                 dest1.write(f"{line[0]} {line[1]} {-log10(p_val)}\n")
                 if f"{chi2.sf(float(line[2]),1)}" not in pval_lrt_d:

@@ -1,5 +1,1 @@
 repository_type: pipeline
-lint:
-  template_strings: False
-  multiqc_config:
-    report_comment: False

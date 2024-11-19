@@ -519,7 +519,6 @@ class VcfToLrt:
             homozygosity = self.u.get_homozygosity(ac)  # calculate homozygosity
             if not record.id:
                 record.id = f"{record.chrom}_{record.pos}"
-            # the logic between line number 385 and 401 is this:
             # why? creating overlapping window with sliding window should not read the same record twice
             # example window size = 2
             # g_list_homo_dict = [{"snp1":0.12,"snp2":0.15},{"snp1":0.12}]
@@ -549,7 +548,7 @@ class VcfToLrt:
             for sample in sample_list:
                 sample_values = record.samples[sample]["GT"]
                 g_list_geno_dict[-1][sample] = [sample_values]
-            # it is always the first element that should reach the user-defined window size, see explanation from line 378--384
+            # it is always the first element that should reach the user-defined window size, see explanation above
             if len(g_list_homo_dict[1]) == window_size:
                 sample_genotypes = g_list_geno_dict[1]
                 positions = g_list_pos_dict[1]

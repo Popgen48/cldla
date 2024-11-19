@@ -1,1 +1,6 @@
 repository_type: pipeline
+lint:
+  nextflow_config: False
+  actions_awsfulltest: False
+  template_strings: False
+  multiqc_config: False

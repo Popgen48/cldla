@@ -1,3 +1,4 @@
+nf_core_version: 3.0.2
 repository_type: pipeline
 lint:
   nextflow_config: False

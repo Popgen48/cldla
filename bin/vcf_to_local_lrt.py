@@ -15,16 +15,12 @@ from random import shuffle
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
-asreml_path = distutils.spawn.find_executable("asreml")
 cldla_snp = distutils.spawn.find_executable("cldla_snp")
 cldla_snp = cldla_snp if cldla_snp else f"{dname}/cldla_snp"
 bend = distutils.spawn.find_executable("bend")
 bend = bend if bend else f"{dname}/bend"
 ginverse = distutils.spawn.find_executable("ginverse")
 ginverse = ginverse if ginverse else f"{dname}/ginverse"
-blupf90 = distutils.spawn.find_executable("blupf90+")
-blupf90 = blupf90 if blupf90 else f"{dname}/blupf90+"
-
 
 g_list_geno_dict = [{}]
 g_list_homo_dict = [{}]
@@ -36,6 +32,7 @@ class AsremlMethods:
 
     def __init__(self):
         self.rm_file_pattern = ".{ask,msv,res,rsv,tmp,tsv,veo,vvp,yht}"
+        self.asreml_path = distutils.spawn.find_executable("asreml")
 
     def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [f"{prefix}.as"] if model == "h1" else [grm.rstrip(".giv") + ".as"]
@@ -96,16 +93,16 @@ class AsremlMethods:
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, phe, model)
         self.prepare_new_dat_file(phe)
-        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        command = f"{self.asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
+        subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.asr")
         return log_l
 
     def run_asreml(self, list_i):
         u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
-        command = f"{asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        command = f"{self.asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
+        subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.asr")
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, -2 * (h0_logl - h1_logl)
@@ -154,8 +151,8 @@ class AsremlMethods:
         suffix_dict = {"h0": f"{prefix}.h0.perm.as", "h1": f"{prefix}.h1.perm.as"}
         log_l_dict = {}
         for k, v in suffix_dict.items():
-            command = f"{asreml_path} -NS5 {v} && rm {prefix}.{k}.perm{self.rm_file_pattern}"
-            subprocess.call([command], shell=True, executable="/bin/bash")
+            command = f"{self.asreml_path} -NS5 {v} && rm {prefix}.{k}.perm{self.rm_file_pattern}"
+            subprocess.call([command], shell=True)
             log_l_dict[k] = self.extract_logl(f"{prefix}.{k}.perm.asr")
         return -2 * (log_l_dict["h0"] - log_l_dict["h1"]) if "na" not in log_l_dict.values() else None
 
@@ -169,6 +166,12 @@ class AsremlMethods:
 
 
 class Blupf90Methods:
+
+    def __init__(self):
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        self.blupf90 = distutils.spawn.find_executable("blupf90+")
+        self.blupf90 = self.blupf90 if self.blupf90 else f"{dname}/blupf90+"
 
     def prepare_params(self, infile, numdiplo, grm, prefix, model):
         outfile_list = [prefix + ".params"]
@@ -270,8 +273,9 @@ class Blupf90Methods:
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
-        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params {grm} {prefix}/ && cd {prefix} && {blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        print(self.blupf90)
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.log", True)
         return log_l
 
@@ -308,21 +312,21 @@ class Blupf90Methods:
         u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.log", True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
     def vce_permutation_h0(self, prefix, grm):
-        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && {blupf90} {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && {self.blupf90} {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
+        subprocess.call([command], shell=True)
         h0_logl = self.extract_logl(f"{prefix}.h0.perm.log", False)
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
-        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && {blupf90} {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && {self.blupf90} {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
+        subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.h1.perm.log", False)
         return h1_logl
 
@@ -504,13 +508,9 @@ class VcfToLrt:
         # copy ginv of grm file to the output directory location and write the output file at the same location
         if store:
             # shutil.copy(f"{grm}", f"{output_dir}/")
-            prefix = grm.rstrip(".giv")
-            param_ext = "as" if tool == "asreml" else "params"
-            store_list.append(
-                f"{prefix},{output_dir}/{grm},{output_dir}/{pheno_file},{output_dir}/{prefix}.{param_ext}"
-            )  # write the window record for H0 hypothesis
-            cp_command = f"cp {prefix}.{{giv,{param_ext}}} {pheno_file} {output_dir}/ "
-            subprocess.call([cp_command], shell=True, executable="/bin/bash")
+            store_list.append(f"{chromosome},{output_dir}/{grm}")  # write and copy the GRM for H0 hypothesis
+            cp_command = f"cp {grm} {output_dir}/ "
+            subprocess.call([cp_command], shell=True)
         # Iterate through VCF records
         for i, record in enumerate(vcf):
             last_ele = -1
@@ -519,6 +519,7 @@ class VcfToLrt:
             homozygosity = self.u.get_homozygosity(ac)  # calculate homozygosity
             if not record.id:
                 record.id = f"{record.chrom}_{record.pos}"
+            # the logic between line number 385 and 401 is this:
             # why? creating overlapping window with sliding window should not read the same record twice
             # example window size = 2
             # g_list_homo_dict = [{"snp1":0.12,"snp2":0.15},{"snp1":0.12}]
@@ -548,7 +549,7 @@ class VcfToLrt:
             for sample in sample_list:
                 sample_values = record.samples[sample]["GT"]
                 g_list_geno_dict[-1][sample] = [sample_values]
-            # it is always the first element that should reach the user-defined window size, see explanation above
+            # it is always the first element that should reach the user-defined window size, see explanation from line 378--384
             if len(g_list_homo_dict[1]) == window_size:
                 sample_genotypes = g_list_geno_dict[1]
                 positions = g_list_pos_dict[1]
@@ -578,6 +579,7 @@ class VcfToLrt:
                                 param_file,
                                 tool,
                                 grm,
+                                win_min_point,
                             )
                         )
                         window_number += 1
@@ -605,6 +607,7 @@ class VcfToLrt:
                             param_file,
                             tool,
                             grm,
+                            win_min_point,
                         )
                     )
                 if num_perm > 0:
@@ -620,40 +623,38 @@ class VcfToLrt:
                 del g_list_homo_dict[1]
                 if len(g_job_list) == int(num_cores):
                     with Pool(processes=len(g_job_list)) as pool:
-                        pool.map(self.create_ginverse, g_job_list, 1)
+                        prfx_mxdip = pool.map(self.create_ginverse, g_job_list, 1)
                     if tool != "asreml":
                         with Pool(processes=len(window_process_list)) as pool:
                             results = pool.map(self.blp.run_blupf90, window_process_list, 1)
-                        with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
+                        with open(f"{outprefix}.{chromosome}.results.txt", "a") as dest:
                             for result in results:
                                 if result:
                                     dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
                         del window_process_list[:]
-                    for i, v in enumerate(g_job_list):
-                        l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
-                        store_list.append(l_prefix)
+                    for i, v in enumerate(prfx_mxdip):
+                        store_list.append(v)
                     del g_job_list[:]
         if len(g_job_list) > 0:
             with Pool(processes=len(g_job_list)) as pool:
-                pool.map(self.create_ginverse, g_job_list, 1)
+                prfx_mxdip = pool.map(self.create_ginverse, g_job_list, 1)
         if len(window_process_list) > 0:
             if tool == "asreml":
                 with Pool(processes=1) as pool:
                     results = pool.map(self.asr.run_asreml, window_process_list, 1)
-                with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
+                with open(f"{outprefix}.{chromosome}.results.txt", "a") as dest:
                     for result in results:
                         if result:
                             dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
             else:
                 with Pool(processes=len(window_process_list)) as pool:
                     results = pool.map(self.blp.run_blupf90, window_process_list, 1)
-                with open(f"{outprefix}_{chromosome}_results.txt", "a") as dest:
+                with open(f"{outprefix}.{chromosome}.results.txt", "a") as dest:
                     for result in results:
                         if result:
                             dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
-            for i, v in enumerate(g_job_list):
-                l_prefix = f"{v[0]}.{v[1]}.{v[5]}"
-                store_list.append(l_prefix)
+            for i, v in enumerate(prfx_mxdip):
+                store_list.append(v)
         if num_perm > 0:
             window_perm_process_list = random.sample(window_perm_process_list, int(num_perm))
             if tool == "asreml":
@@ -662,28 +663,28 @@ class VcfToLrt:
             else:
                 with Pool(processes=int(num_cores)) as pool:
                     results_perm = pool.map(self.blp.process_permutation_window, window_perm_process_list, 1)
-            with open(f"{outprefix}_{chromosome}_perm_results.txt", "a") as dest:
+            with open(f"{outprefix}.{chromosome}.perm_results.txt", "a") as dest:
                 for result in results_perm:
                     if result:
                         dest.write(f"{chromosome} {result[0]} {result[1]} {result[2]}\n")
         if store:
-            dest = open(f"{outprefix}_{chromosome}_window_info.csv", "w")
+            dest = open(f"{outprefix}.{chromosome}.window_info.csv", "w")
         param_ext = "as" if tool == "asreml" else "params"
         for i, v in enumerate(store_list):
             if store:
                 if i == 0:
                     dest.write(f"{v}\n")
                 else:
-                    dest.write(f"{v},{output_dir}/{v}.giv,{output_dir}/{v}.dat,{output_dir}/{v}.{param_ext}\n")
-                    cp_command = f"cp {v}.{{giv,{param_ext},dat}} {output_dir}/"
-                    subprocess.call([cp_command], shell=True, executable="/bin/bash")
-                    rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
-                    subprocess.call([rm_command], shell=True, executable="/bin/bash")
+                    dest.write(f"{round(v[2],4)},{v[0]},{output_dir}/{v[0]}.giv,{output_dir}/{v[0]}.dat,{v[1]}\n")
+                    cp_command = f"cp {v[0]}.{{giv,dat}} {output_dir}/"
+                    subprocess.call([cp_command], shell=True)
+                    rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
+                    subprocess.call([rm_command], shell=True)
             else:
-                rm_command = f"rm {v}.{{giv,{param_ext},dat}}"
-                subprocess.call([rm_command], shell=True, executable="/bin/bash")
+                rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
+                subprocess.call([rm_command], shell=True)
         rm_command = f"rm *.perm.*"
-        subprocess.call([rm_command], shell=True, executable="/bin/bash")
+        subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):
@@ -700,6 +701,7 @@ class VcfToLrt:
             params_file,
             tool,
             grm,
+            win_min_point,
         ) = input_list
         prefix = f"{dataset}.{chromosome}.{window_number}"
         hap_path = f"{prefix}.Hap"
@@ -718,15 +720,15 @@ class VcfToLrt:
             self.blp.prepare_params(params_file, max_d, grm, prefix, "h1")  # prepare parameter file for blupf90
 
         command = (
-            f"{cldla_snp} {prefix} && {bend} {prefix}.grm {prefix}.B.grm && {ginverse} {max_d} {prefix}.B.grm {prefix}.giv"
-            # + "&& rm "
-            # + prefix
-            # + ".{Hap,Map,par,grm,B.grm}"
+            f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
+            + "&& rm "
+            + prefix
+            + ".{Hap,Map,par,grm,B.grm}"
         )
 
-        subprocess.call([command], shell=True, executable="/bin/bash")
+        subprocess.call([command], shell=True)
 
-        print(f"Generated .dat and .giv for {window_number}")
+        return prefix, max_d, win_min_point
 
 
 if __name__ == "__main__":
@@ -790,7 +792,13 @@ if __name__ == "__main__":
         help="whether or not to store ginv, grm and phenotype file for each window",
         action="store_true",
     )
-    parser.add_argument("-O", "--output_dir", help="path to the output directory", default="cldla", required=False)
+    parser.add_argument(
+        "-O",
+        "--output_dir",
+        help="path to the output directory",
+        default="cldla",
+        required=False,
+    )
 
     args = parser.parse_args()
 
@@ -798,21 +806,26 @@ if __name__ == "__main__":
         parser.print_help(sys.stderr)
         sys.exit(1)
     elif args.store and not args.output_dir:
-        print("when setting the tag --store the output_dir must be defined")
+        print("when setting the tag --store the output_dir must be defined and include the absolute path")
         sys.exit(1)
     else:
-        calc_lrt = VcfToLrt()
-        calc_lrt.read_vcf(
-            args.vcf,
-            args.chr,
-            args.window_size,
-            args.num_cpus,
-            args.grm,
-            args.pheno,
-            args.params,
-            args.tool,
-            args.num_perm,
-            args.store,
-            args.output_dir,
-            args.outprefix,
-        )
+        if args.store and args.output_dir:
+            if not os.path.isabs(args.output_dir):
+                print("when setting the tag --store the output dir must have the absoulte path")
+                sys.exit(1)
+            else:
+                calc_lrt = VcfToLrt()
+                calc_lrt.read_vcf(
+                    args.vcf,
+                    args.chr,
+                    args.window_size,
+                    args.num_cpus,
+                    args.grm,
+                    args.pheno,
+                    args.params,
+                    args.tool,
+                    args.num_perm,
+                    args.store,
+                    args.output_dir,
+                    args.outprefix,
+                )

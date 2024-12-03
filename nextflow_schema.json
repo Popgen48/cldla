@@ -217,6 +217,13 @@
         "max_time": {
             "type": "string",
             "default": "240.h"
+        },
+        "store": {
+            "type": "boolean"
+        },
+        "store_outdir": {
+            "type": "string",
+            "format": "directory-path"
         }
     }
 }

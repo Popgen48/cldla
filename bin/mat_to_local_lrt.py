@@ -18,6 +18,7 @@ class MatToLrt:
         h1_inputs = []
         h0_logl = "na"
         self.cpu = int(cpu)
+        results = []
         with open(csv) as source:
             for line in source:
                 line = line.rstrip().split(",")
@@ -43,10 +44,25 @@ class MatToLrt:
             results = self.run_h1_asreml(h1_inputs)
         if tool == "blupf90":
             results = self.run_h1_blupf90(h1_inputs)
-        with open(f"{prefix}.{chrom}.results.txt", "a") as dest:
-            for result in results:
-                if result:
-                    dest.write(f"{chrom} {result[0]} {result[1]} {result[2]}\n")
+        if len(results) == 0:
+            print(
+                "the analysis seems not to have generated any results, check input files or report bug"
+            )
+            sys.exit(1)
+        else:
+            with open(f"{prefix}.{chrom}.all_window_results.txt", "a") as dest_a:
+                dest_a.write("chromosome window mid-point lrt-value message\n")
+                with open(
+                    f"{prefix}.{chrom}.filtered_window_results.txt", "a"
+                ) as dest_f:
+                    for result in results:
+                        if not result[4]:
+                            dest_f.write(
+                                f"{chrom} {result[0]} {result[1]} {result[2]}\n"
+                            )
+                        dest_a.write(
+                            f"{chrom} {result[0]} {result[1]} {result[2]} {result[3]}\n"
+                        )
 
     def run_h1_asreml(self, list_i):
         with Pool(processes=1) as pool:
@@ -72,7 +88,9 @@ class MatToLrt:
             sys.exit(1)
         return log_l
 
-    def prepare_h1_params(self, chrom, dat, drm, grm, max_diplo, param, pheno, prefix, tool):
+    def prepare_h1_params(
+        self, chrom, dat, drm, grm, max_diplo, param, pheno, prefix, tool
+    ):
         drm_fn = os.path.basename(drm)
         pattern = re.compile(r"(.*)\.([0-9]+)\.giv")
         match = re.findall(pattern, drm_fn)
@@ -110,4 +128,6 @@ class MatToLrt:
 
 if __name__ == "__main__":
     mtl = MatToLrt()
-    mtl.main_func(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    mtl.main_func(
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+    )

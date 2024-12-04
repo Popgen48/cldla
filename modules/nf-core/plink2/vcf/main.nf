@@ -11,9 +11,9 @@ process PLINK2_VCF {
     tuple val(meta), path(vcf)
 
     output:
-    tuple val(meta), path("*.pgen")    , emit: pgen
-    tuple val(meta), path("*.psam")    , emit: psam
-    tuple val(meta), path("*.pvar")    , emit: pvar
+    tuple val(meta), path("*.bed")    , emit: bed
+    tuple val(meta), path("*.bim")    , emit: bim
+    tuple val(meta), path("*.fam")    , emit: fam
     tuple val(meta), path("*.pvar.zst"), emit: pvar_zst, optional: true
     path "versions.yml"                , emit: versions
 

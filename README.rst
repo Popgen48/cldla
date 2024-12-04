@@ -54,13 +54,13 @@ Example commands to run the workflow
 
 ..  code-block:: Bash
 
-    nextflow run popgen-cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
+    nextflow run cldla/ --input chrom_vcf_idx.csv --maf 0.05 --pheno_file TailMLS04.template.phe -qs 10 --outdir testing_blupf90_TailMLS04 -resume -profile singularity --output_prefix TailMLS04 --tool blupf90
 
 **To estimate heritability using the approach as implemented in GCTA**
 
 ..  code-block:: Bash
 
-    nextflow run popgen-cldla/ --input nextflow_testing/TailMLS04/chrom_vcf_idx.csv --maf 0.05 --pheno_file nextflow_testing/TailMLS04/TailMLS04.template.phe -qs 10 --outdir testing_h2_TailMLS04 -resume -profile singularity --output_prefix TailMLS04_h2 --estimate_h2
+    nextflow run cldla/ --input nextflow_testing/TailMLS04/chrom_vcf_idx.csv --maf 0.05 --pheno_file nextflow_testing/TailMLS04/TailMLS04.template.phe -qs 10 --outdir testing_h2_TailMLS04 -resume -profile singularity --output_prefix TailMLS04_h2 --estimate_h2
 
 *Note that estimation of heritability using GCTA requires that the regressors be separated into two files: quantitative variables and qualitative variables. Therefore, in the phenotype file, any column with the float values (identified using the presence of dot,".") are automatically classified as quantitative and the column without float values are classified as qualitative. Further, the workflow to estimate h2, will produce the error if there is any column with mixtures of float and integer values.*
 

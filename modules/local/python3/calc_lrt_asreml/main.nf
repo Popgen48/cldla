@@ -10,8 +10,8 @@ process PYTHON3_CALC_LRT_ASREML {
     output:
         tuple val(meta), path("*filtered_window_results.txt"), emit: real_txt
         tuple val(meta), path("*all_window_results.txt"), emit: all_window
-        tuple val(meta), path("*_perm_results.txt"), emit: perm_txt optional: true
-        path("*.csv") optional: true
+        tuple val(meta), path("*_perm_results.txt"), optional: true, emit: perm_txt
+        path("*.csv"), optional: true
 
     when:
         task.ext.when == null || task.ext.when
@@ -22,7 +22,7 @@ process PYTHON3_CALC_LRT_ASREML {
         window_size = params.window_size
         tool = params.tool
         n_perm = params.n_perm
-        args = ""
+        def args = ""
 
         if(params.store){
                 args = args+ " --s "+" -O "+ params.store_outdir

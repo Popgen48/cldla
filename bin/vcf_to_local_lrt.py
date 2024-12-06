@@ -567,9 +567,9 @@ class VcfToLrt:
         if store:
             # shutil.copy(f"{grm}", f"{output_dir}/")
             store_list.append(
-                f"{chromosome},{output_dir}/{grm}"
+                f"{chromosome},{output_dir}/{chromosome}/{grm}"
             )  # write and copy the GRM for H0 hypothesis
-            cp_command = f"cp {grm} {output_dir}/ "
+            cp_command = f"mkdir -p {output_dir}/{chromosome} && cp {grm} {output_dir}/{chromosome} "
             subprocess.call([cp_command], shell=True)
         # Iterate through VCF records
         for i, record in enumerate(vcf):
@@ -773,9 +773,9 @@ class VcfToLrt:
                     dest.write(f"{v}\n")
                 else:
                     dest.write(
-                        f"{round(v[2],4)},{v[0]},{output_dir}/{v[0]}.giv,{output_dir}/{v[0]}.dat,{v[1]}\n"
+                        f"{round(v[2],4)},{v[0]},{output_dir}/{chromosome}/{v[0]}.giv,{output_dir}/{chromosome}/{v[0]}.dat,{v[1]}\n"
                     )
-                    cp_command = f"cp {v[0]}.{{giv,dat}} {output_dir}/"
+                    cp_command = f"cp {v[0]}.{{giv,dat}} {output_dir}/{chromosome}/"
                     subprocess.call([cp_command], shell=True)
                     rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
                     subprocess.call([rm_command], shell=True)
@@ -903,7 +903,8 @@ if __name__ == "__main__":
         "-s",
         "--store",
         help="whether or not to store ginv, grm and phenotype file for each window",
-        action="store_true",
+        default=False,
+        action=argparse.BooleanOptionalAction,
     )
     parser.add_argument(
         "-O",
@@ -923,26 +924,24 @@ if __name__ == "__main__":
             "when setting the tag --store the output_dir must be defined and include the absolute path"
         )
         sys.exit(1)
+    elif args.store and not os.path.isabs(args.output_dir):
+            print(
+                "when setting the tag --store the output dir must have the absoulte path"
+            )
+            sys.exit(1)
     else:
-        if args.store and args.output_dir:
-            if not os.path.isabs(args.output_dir):
-                print(
-                    "when setting the tag --store the output dir must have the absoulte path"
-                )
-                sys.exit(1)
-            else:
-                calc_lrt = VcfToLrt()
-                calc_lrt.read_vcf(
-                    args.vcf,
-                    args.chr,
-                    args.window_size,
-                    args.num_cpus,
-                    args.grm,
-                    args.pheno,
-                    args.params,
-                    args.tool,
-                    args.num_perm,
-                    args.store,
-                    args.output_dir,
-                    args.outprefix,
-                )
+        calc_lrt = VcfToLrt()
+        calc_lrt.read_vcf(
+            args.vcf,
+            args.chr,
+            args.window_size,
+            args.num_cpus,
+            args.grm,
+            args.pheno,
+            args.params,
+            args.tool,
+            args.num_perm,
+            args.store,
+            args.output_dir,
+            args.outprefix,
+        )

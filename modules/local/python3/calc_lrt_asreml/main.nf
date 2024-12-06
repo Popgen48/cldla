@@ -24,7 +24,7 @@ process PYTHON3_CALC_LRT_ASREML {
         n_perm = params.n_perm
         def args = ""
 
-        if(params.store){
+        if(params.store == true){
                 args = args+ " --s "+" -O "+ params.store_outdir
             }
 

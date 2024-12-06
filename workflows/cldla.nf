@@ -81,12 +81,15 @@ def multiqc_report = []
 workflow CLDLA {
     ch_versions = Channel.empty()
 
+
     //
     // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     //
     CHECK_INPUT(
         ch_input
     )
+
+    if(!params.est_lrt_only){
 
     if (!params.include_chrom) {
         chrom = CHECK_INPUT.out.meta_vcf_idx.map { meta, vcf, idx -> meta.id } // chrom separated out so that UAR matrix can be calculated
@@ -262,7 +265,23 @@ workflow CLDLA {
         plot_yml,
         PROCESS_PERM.out.threshold_txt
     )
+        }
     }
+    // this "else" loop will only run when "--est-lrt-only" is set to true, decided not to touch the modules and change the channel output of the part of the worklfow that are already running smoothly
+    else{
+
+    //
+    // MODULE: prepare parameter template file for the tools asreml or blupf90
+    //
+
+        par_file = params.extra_params ? Channel.fromPath(params.extra_params) : (params.tool == 'asreml' ? Channel.fromPath(params.default_asreml_params) : Channel.fromPath(params.default_blupf90_params))
+
+        PYTHON3_PREPARE_PARAMETER_TEMPLATE(
+        pheno_f,
+        par_file
+        )
+
+        }
 }
 
 /*

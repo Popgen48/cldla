@@ -12,6 +12,8 @@ from multiprocessing import Pool
 from filter_vcf import make_sample_list
 from random import shuffle
 
+if(sys.version_info[0] < 3) and (sys.version_info[1] <9):
+    raise Exception("Must be using Python 3.9+")
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)

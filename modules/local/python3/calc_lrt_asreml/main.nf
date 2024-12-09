@@ -1,7 +1,7 @@
 process PYTHON3_CALC_LRT_ASREML {
     tag { "${meta.id}" }
     label 'process_medium'
-    publishDir("${params.outdir}/python3/calc_lrt/${chrom}/", mode:'copy')
+    publishDir("${params.outdir}/python3/calc_lrt/${chrom}", mode:'copy')
     maxForks 1
 
     input:
@@ -11,6 +11,8 @@ process PYTHON3_CALC_LRT_ASREML {
         tuple val(meta), path("*filtered_window_results.txt"), emit: real_txt
         tuple val(meta), path("*all_window_results.txt"), emit: all_window
         tuple val(meta), path("*perm_results.txt"), optional: true, emit: perm_txt
+        path("*.asr")
+        path("*.sln")
         path("*.csv"), optional: true
 
     when:

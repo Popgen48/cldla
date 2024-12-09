@@ -148,6 +148,10 @@ class AsremlMethods:
             message = match[0][2]
             if "LogL not converged" in message:
                 is_error_word = True
+            elif "LogL Converged" in message:
+                if is_error_word:
+                    message = message+" EITHER LOCAL OR SINGULARITY WORD DID APPEAR IN ASR FILE"
+                is_error_word = False
         return conv_logl, message, is_error_word
 
     def generate_permutation_param(self, prefix):

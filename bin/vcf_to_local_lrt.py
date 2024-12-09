@@ -136,8 +136,6 @@ class AsremlMethods:
                     match = re.findall(pattern, line)
                     if len(match) > 0:
                         conv_logl = round(float(match[0][1]), 4)
-                        if is_error_word:
-                            is_error_word = False
                 last_line = line
         if last_line == "na":
             print(f"last line of {asr} could not be read")
@@ -146,9 +144,9 @@ class AsremlMethods:
             pattern = re.compile(r"([0-9]{2}:[0-9]{2}:[0-9\.]+)(\s+)(.*)")
             match = re.findall(pattern, last_line)
             message = match[0][2]
-            if "LogL not converged" in message:
+            if "LogL not converged" in message or "ocal" in message:
                 is_error_word = True
-            elif "LogL Converged" in message:
+            elif "LogL Converged" in message and "ocal" not in message:
                 if is_error_word:
                     message = message+" EITHER LOCAL OR SINGULARITY WORD DID APPEAR IN ASR FILE"
                 is_error_word = False

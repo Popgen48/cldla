@@ -105,8 +105,7 @@ class AsremlMethods:
         subprocess.call([command], shell=True)
         log_l, message, is_error_word = self.extract_logl(f"{prefix}.asr")
         if is_error_word:
-            print(f"Singularity or Local convergence problem in H0:{message}")
-            sys.exit(1)
+            print(f"WARNING: Singularity or Local convergence problem in H0:{message}")
         return log_l
 
     def run_asreml(self, list_i):

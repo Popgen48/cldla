@@ -149,7 +149,7 @@ class AsremlMethods:
             elif "LogL Converged" in message and "ocal" not in message:
                 if is_error_word:
                     message = message+" EITHER LOCAL OR SINGULARITY WORD DID APPEAR IN ASR FILE"
-                is_error_word = False
+                #is_error_word = False
         return conv_logl, message, is_error_word
 
     def generate_permutation_param(self, prefix):

@@ -233,6 +233,7 @@ workflow CLDLA {
 
         PYTHON3_CALC_LRT = params.tool == 'asreml' ? PYTHON3_CALC_LRT_ASREML(ch_lrt) : PYTHON3_CALC_LRT_BLUPF90(ch_lrt)
 
+
         lrt_f = PYTHON3_CALC_LRT.real_txt.map { v, f->f }.collect()
         lrt_perm_f = PYTHON3_CALC_LRT.perm_txt.map { v, f->f }.collect()
 

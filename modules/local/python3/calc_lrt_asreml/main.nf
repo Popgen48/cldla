@@ -10,7 +10,7 @@ process PYTHON3_CALC_LRT_ASREML {
     output:
         tuple val(meta), path("*filtered_window_results.txt"), emit: real_txt
         tuple val(meta), path("*all_window_results.txt"), emit: all_window
-        tuple val(meta), path("*_perm_results.txt"), optional: true, emit: perm_txt
+        tuple val(meta), path("*perm_results.txt"), optional: true, emit: perm_txt
         path("*.csv"), optional: true
 
     when:

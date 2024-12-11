@@ -2,6 +2,8 @@ process PYTHON3_CALC_LRT_ASREML {
     tag { "${meta.id}" }
     label 'process_medium'
     publishDir("${params.outdir}/python3/calc_lrt/${chrom}", mode:'copy')
+    errorStrategy 'retry'
+    maxRetries 3
     maxForks 1
 
     input:

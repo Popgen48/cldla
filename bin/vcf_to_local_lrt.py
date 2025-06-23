@@ -327,7 +327,7 @@ class Blupf90Methods:
         self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
         print(self.blupf90)
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.log", True)
         return log_l
@@ -369,7 +369,7 @@ class Blupf90Methods:
         u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
-        command = f"mkdir {prefix} && cp {prefix}.{{dat,params}} ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.log", True)
         if h0_logl != "na" and h1_logl != "na":
@@ -827,9 +827,9 @@ class VcfToLrt:
 
         command = (
             f"{dname}/cldla_snp {prefix} && {dname}/bend {prefix}.grm {prefix}.B.grm && {dname}/ginverse {max_d} {prefix}.B.grm {prefix}.giv"
-            + "&& rm "
-            + prefix
-            + ".{Hap,Map,par,grm,B.grm}"
+            #+ "&& rm "
+            #+ prefix
+            #+ ".{Hap,Map,par,grm,B.grm}"
         )
 
         subprocess.call([command], shell=True)

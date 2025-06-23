@@ -69,7 +69,7 @@ if tool == "asreml":
     dest.write(f"!I\n!LDET\n!LDET\n")
     if extra_params_line != "":
         dest.write(f"{extra_params_line}")
-    dest.write(f'{header_keys[-1]} ~ mu {" ".join([k for k in header_keys[2:-1]])} !r giv(iDip,2) !r giv(iid,1)\n')
+    dest.write(f'{header_keys[-1]} ~ mu {" ".join([k for k in header_keys[2:-1]])} !r giv(iDip,2) !r giv(iidx,1)\n')
 else:
     dest.write(
         f"NUMBER_OF_TRAITS\n1\nNUMBER_OF_EFFECTS\n{len(header_keys)-2}\nOBSERVATION(S)\n{len(header_keys)}\nWEIGHT(S)\n\nEFFECTS:\n"

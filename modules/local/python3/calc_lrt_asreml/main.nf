@@ -4,7 +4,7 @@ process PYTHON3_CALC_LRT_ASREML {
     publishDir("${params.outdir}/python3/calc_lrt/${chrom}", mode:'copy')
     errorStrategy 'retry'
     maxRetries 3
-    maxForks 1
+    maxForks 2
 
     input:
         tuple val(meta), path(chrom_giv), path(pheno_file), path(par_file), path(vcf_file)

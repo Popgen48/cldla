@@ -11,6 +11,7 @@ import random
 from multiprocessing import Pool
 from filter_vcf import make_sample_list
 from random import shuffle
+import time
 
 if(sys.version_info[0] < 3) and (sys.version_info[1] <9):
     raise Exception("Must be using Python 3.9+")
@@ -113,7 +114,8 @@ class AsremlMethods:
         command = (
             f"{self.asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
         )
-        subprocess.call([command], shell=True)
+        p1 = subprocess.Popen([command], shell=True)
+        sStdout, sStdErr = p1.communicate()
         h1_logl, message, is_error_word = self.extract_logl(f"{prefix}.asr")
         return prefix, mid_win_point, -2 * (h0_logl - h1_logl), message, is_error_word
 
@@ -696,11 +698,11 @@ class VcfToLrt:
                 del g_list_geno_dict[1]
                 del g_list_pos_dict[1]
                 del g_list_homo_dict[1]
-                if len(g_job_list) == int(num_cores):
-                    with Pool(processes=len(g_job_list)) as pool:
+                if len(g_job_list) >= int(num_cores):
+                    with Pool(processes=int(num_cores)) as pool:
                         prfx_mxdip = pool.map(self.create_ginverse, g_job_list, 1)
                     if tool != "asreml":
-                        with Pool(processes=len(window_process_list)) as pool:
+                        with Pool(processes=int(num_cores)) as pool:
                             results = pool.map(
                                 self.blp.run_blupf90, window_process_list, 1
                             )
@@ -719,8 +721,11 @@ class VcfToLrt:
                 prfx_mxdip = pool.map(self.create_ginverse, g_job_list, 1)
         if len(window_process_list) > 0:
             if tool == "asreml":
-                with Pool(processes=1) as pool:
-                    results = pool.map(self.asr.run_asreml, window_process_list, 1)
+                results = []
+                for i in window_process_list:
+                        l_results = self.asr.run_asreml(i)
+                        results.append(l_results)
+                print(results)
                 with open(
                     f"{outprefix}.{chromosome}.all_window_results.txt", "a"
                 ) as dest_a:
@@ -899,7 +904,7 @@ if __name__ == "__main__":
         "--num_perm",
         metavar="Int",
         help='carry out "n" permutation to access the level of significance (True or False)',
-        default=100,
+        default=0,
         required=False,
     )
     parser.add_argument(
@@ -948,3 +953,4 @@ if __name__ == "__main__":
             args.output_dir,
             args.outprefix,
         )
+

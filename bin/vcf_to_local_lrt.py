@@ -97,7 +97,18 @@ class AsremlMethods:
         self.prepare_params(params_file, diplo, grm, phe, model)
         self.prepare_new_dat_file(phe)
         command = f"{self.asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
-        subprocess.call([command], shell=True)
+        retries = 0
+        while True:
+            p1 = subprocess.Popen([command], shell=True)
+            sStdout, sStdErr = p1.communicate()
+
+            if os.path.exists(f"{prefix}.asr"):
+                break
+            else:
+                retries += 1
+                #if retries >= max_retries:
+                #    raise FileNotFoundError(f"{prefix}.asr was not created after {max_retries} attempts.")
+                time.sleep(3)
         log_l, message, is_error_word = self.extract_logl(f"{prefix}.asr")
         if is_error_word:
             print(f"WARNING: Singularity or Local convergence problem in H0:{message}")
@@ -108,8 +119,8 @@ class AsremlMethods:
         command = f"{self.asreml_path} -NS5 {prefix}.as && rm {prefix}{self.rm_file_pattern}"
 
         #max_retries = 10  # Optional: limit retries to avoid infinite loops
-        retries = 0
 
+        retries = 0
         while True:
             p1 = subprocess.Popen([command], shell=True)
             sStdout, sStdErr = p1.communicate()

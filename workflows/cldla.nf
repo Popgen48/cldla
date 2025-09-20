@@ -235,7 +235,10 @@ workflow CLDLA {
 
 
         lrt_f = PYTHON3_CALC_LRT.real_txt.map { v, f->f }.collect()
-        lrt_perm_f = PYTHON3_CALC_LRT.perm_txt.map { v, f->f }.collect()
+
+        if(params.n_perm > 0){
+            lrt_perm_f = PYTHON3_CALC_LRT.perm_txt.map { v, f->f }.collect()
+        }
 
         //
         // MODULE: python script to prepare the input file for manhattan plot
@@ -250,7 +253,7 @@ workflow CLDLA {
         //
         PROCESS_PERM(
         ch_input,
-        lrt_perm_f
+        params.n_perm > 0 ? lrt_perm_f : lrt_f
     )
 
         plot_yml = Channel.fromPath(params.manhattan_plot_yml, checkIfExists: true)

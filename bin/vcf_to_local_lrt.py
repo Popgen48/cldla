@@ -191,7 +191,19 @@ class AsremlMethods:
         log_l_dict = {}
         for k, v in suffix_dict.items():
             command = f"{self.asreml_path} -NS5 {v} && rm {prefix}.{k}.perm{self.rm_file_pattern}"
-            subprocess.call([command], shell=True)
+            retries = 0
+            while True:
+                p1 = subprocess.Popen([command], shell=True)
+                sStdout, sStdErr = p1.communicate()
+
+                if os.path.exists(f"{prefix}.asr"):
+                    break
+                else:
+                    retries += 1
+                    #if retries >= max_retries:
+                    #    raise FileNotFoundError(f"{prefix}.asr was not created after {max_retries} attempts.")
+                    time.sleep(3)
+            #subprocess.call([command], shell=True)
             conv_logl, message, is_error_word = self.extract_logl(f"{prefix}.{k}.perm.asr")
             if is_error_word:
                 log_l_dict[k] = "na"

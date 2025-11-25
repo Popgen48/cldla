@@ -25,7 +25,7 @@ for c_file in chrom_files:
 
 df = pd.DataFrame(global_list, columns=["chrom", "window_name", "cord", "LRT_values"])
 
-if int(n_perm) == 0:
+if int(n_perm) == 0 and process == "estimate":
     chrom_list = df["chrom"].unique().tolist()
     with open(f"{outprefix}_chrom_threshold.txt","w") as dest:
         for chrom in chrom_list:

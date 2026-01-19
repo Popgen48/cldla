@@ -328,8 +328,8 @@ class Blupf90Methods:
         prefix = grm.rstrip(".giv")
         self.prepare_params(params_file, diplo, grm, prefix, model)
         self.prepare_datfile(phe, prefix)
-        print(self.blupf90)
-        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        #print(self.blupf90)
+        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .."
         subprocess.call([command], shell=True)
         log_l = self.extract_logl(f"{prefix}.log", True)
         return log_l
@@ -367,20 +367,20 @@ class Blupf90Methods:
         u = util()
         prefix, h0_logl, mid_win_point, grm = list_i
         win_ginv = prefix.rstrip(".perm") + ".giv"
-        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .. && rm -r {prefix}"
+        command = f"mkdir {prefix} && cp {prefix}.dat {prefix}.params ./{prefix} && cp {win_ginv} {prefix}/ && cp {grm} {prefix}/ && cd {prefix} && {self.blupf90} {prefix}.params >& ../{prefix}.log && cd .."
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.log", True)
         if h0_logl != "na" and h1_logl != "na":
             return prefix, mid_win_point, h0_logl - h1_logl
 
     def vce_permutation_h0(self, prefix, grm):
-        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && {self.blupf90} {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .. && rm -r {prefix}_h0_perm"
+        command = f"mkdir {prefix}_h0_perm && cp {prefix}.h0.perm.{{dat,params}} ./{prefix}_h0_perm/ && cp {prefix}.giv {prefix}_h0_perm/ && cp {grm} {prefix}_h0_perm/ && cd {prefix}_h0_perm && {self.blupf90} {prefix}.h0.perm.params >& ../{prefix}.h0.perm.log && cd .."
         subprocess.call([command], shell=True)
         h0_logl = self.extract_logl(f"{prefix}.h0.perm.log", False)
         return h0_logl
 
     def vce_permutation_h1(self, prefix, grm):
-        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && {self.blupf90} {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .. && rm -r {prefix}_h1_perm"
+        command = f"mkdir {prefix}_h1_perm && cp {prefix}.h1.perm.{{dat,params}} ./{prefix}_h1_perm/ && cp {prefix}.giv {prefix}_h1_perm/ && cp {grm} {prefix}_h1_perm/ && cd {prefix}_h1_perm && {self.blupf90} {prefix}.h1.perm.params >& ../{prefix}.h1.perm.log && cd .."
         subprocess.call([command], shell=True)
         h1_logl = self.extract_logl(f"{prefix}.h1.perm.log", False)
         return h1_logl

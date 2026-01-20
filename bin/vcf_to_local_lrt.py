@@ -743,13 +743,13 @@ class VcfToLrt:
                     )
                     cp_command = f"cp {v[0]}.{{giv,dat}} {output_dir}/{chromosome}/"
                     subprocess.call([cp_command], shell=True)
-                    rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
-                    subprocess.call([rm_command], shell=True)
-            else:
-                rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
-                subprocess.call([rm_command], shell=True)
-        rm_command = f"rm *.perm.*"
-        subprocess.call([rm_command], shell=True)
+                    #rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
+                    #subprocess.call([rm_command], shell=True)
+            #else:
+                #rm_command = f"rm {v[0]}.{{giv,{param_ext},dat}}"
+                #subprocess.call([rm_command], shell=True)
+        #rm_command = f"rm *.perm.*"
+        #subprocess.call([rm_command], shell=True)
         vcf.close()
 
     def create_ginverse(self, input_list):

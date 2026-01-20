@@ -11,10 +11,8 @@ process PYTHON3_CALC_LRT_BLUPF90 {
         tuple val(meta), path(chrom_giv), path(pheno_file), path(par_file), path(vcf_file)
 
     output:
-        tuple val(meta), path("*filtered_window_results.txt"), emit: real_txt
-        tuple val(meta), path("*all_window_results.txt"), emit: all_window
-        tuple val(meta), path("*perm_results.txt"), emit: perm_txt
-        path("*.csv"), optional: true
+        tuple val(meta), path("*results.txt"), emit: real_txt
+        tuple val(meta), path("*perm_results.txt"), optional: true, emit: perm_txt
 
     when:
         task.ext.when == null || task.ext.when

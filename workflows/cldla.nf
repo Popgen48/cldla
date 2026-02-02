@@ -68,7 +68,7 @@ include { PYTHON3_MANHATTAN_PLOT } from '../modules/local/python3/manhattan_plot
 // MODULE: Installed directly from nf-core/modules
 //
 include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
-include { PLINK2_VCF } from '../modules/nf-core/plink2/vcf/main'
+include { PLINK_VCF } from '../modules/nf-core/plink/vcf/main'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -141,14 +141,14 @@ workflow CLDLA {
     // determine whether or not to estimate heritability, note that cldla and estimating heritability are mutually exclusive process
 
     if (params.estimate_h2) {
-        PLINK2_VCF(
+        PLINK_VCF(
             BCFTOOLS_CONCAT.out.vcf
         )
 
         MAKE_GRM(
-            PLINK2_VCF.out.bed,
-            PLINK2_VCF.out.fam,
-            PLINK2_VCF.out.bim
+            PLINK_VCF.out.bed,
+            PLINK_VCF.out.fam,
+            PLINK_VCF.out.bim
         )
 
         PYTHON3_CREATE_GCTA_INPUT(
